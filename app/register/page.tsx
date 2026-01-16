@@ -1,91 +1,62 @@
-'use client';
+import Link from 'next/link';
 
-import { useState } from 'react';
-import { supabase } from '@/lib/supabase';
-
-export default function RegisterPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [username, setUsername] = useState('');
-
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: { username }
-        }
-      });
-
-      if (error) throw error;
-      alert('Inscription réussie ! Vérifie tes emails.');
-    } catch (error: any) {
-      alert('Erreur : ' + error.message);
-    }
-  };
-
+export default function LoginPage() {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
-      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-        <h1 className="text-2xl font-bold mb-6 text-center">Rejoins DevStep</h1>
+    // Fond avec dégradé fluide
+    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-4">
+      
+      {/* Carte avec effet de verre */}
+      <div className="relative w-full max-w-md p-8 rounded-3xl bg-white/20 backdrop-blur-lg border border-white/30 shadow-2xl">
         
-        <form onSubmit={handleRegister} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Pseudo</label>
-            <input 
-              type="text" 
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="w-full p-2 border rounded" 
-              placeholder="Ton pseudo"
-              required 
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Email</label>
+        {/* Icône de profil cercle bleu foncé */}
+        <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-24 h-24 bg-[#1a365d] rounded-full flex items-center justify-center border-4 border-white/50 shadow-lg">
+          <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+        </div>
+
+        <form className="mt-8 space-y-6">
+          {/* Champ Email */}
+          <div className="relative">
             <input 
               type="email" 
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full p-2 border rounded" 
-              placeholder="nom@exemple.com"
-              required 
+              placeholder="Email ID" 
+              className="w-full pl-12 pr-4 py-3 bg-[#2d4a6d]/80 text-white placeholder-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
+            <span className="absolute left-4 top-3.5 text-gray-300">👤</span>
           </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Mot de passe</label>
+
+          {/* Champ Password */}
+          <div className="relative">
             <input 
               type="password" 
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full p-2 border rounded" 
-              placeholder="********"
-              required 
+              placeholder="Password" 
+              className="w-full pl-12 pr-4 py-3 bg-[#2d4a6d]/80 text-white placeholder-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
+            <span className="absolute left-4 top-3.5 text-gray-300">🔒</span>
           </div>
-          <button 
-            type="submit" 
-            className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700 transition"
-          >
-            Créer mon compte gratuit
+
+          {/* Options supplémentaires */}
+          <div className="flex items-center justify-between text-xs text-blue-900 font-medium">
+            <label className="flex items-center cursor-pointer">
+              <input type="checkbox" className="mr-2 rounded" /> Remember me
+            </label>
+            <button type="button" className="hover:underline">Forgot Password?</button>
+          </div>
+
+          {/* Bouton Login */}
+          <button className="w-full py-3 bg-[#1a365d] text-white font-bold rounded-xl shadow-lg hover:bg-blue-900 transition-all uppercase tracking-widest text-sm">
+            Login
           </button>
         </form>
 
-        {/* TON NOUVEAU LIEN DE CONTACT CI-DESSOUS */}
-        <div className="mt-6 pt-4 border-t border-gray-100 text-center">
-          <p className="text-sm text-gray-500">
-            Un problème technique ? 
-            <br />
-            <a 
-              href="mailto:davidbyadunia04@gmail.com?subject=Aide%20DevStep" 
-              className="text-blue-500 hover:text-blue-700 font-semibold"
-            >
-              Contacte David par email
-            </a>
+        {/* LIEN DE CONTACT (Ta demande spécifique) */}
+        <div className="mt-8 text-center border-t border-white/20 pt-4">
+          <p className="text-sm text-blue-900">
+            Un problème ? <a href="mailto:ton-email@exemple.com" className="font-bold hover:underline underline-offset-4">Contactez-nous par email</a>
           </p>
         </div>
+
       </div>
     </div>
   );
