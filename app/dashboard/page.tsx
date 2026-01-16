@@ -5,40 +5,38 @@ import { redirect } from 'next/navigation'
 export default async function DashboardPage() {
   const cookieStore = await cookies()
   
-  // On crée le client avec une protection pour éviter les erreurs de build
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL ?? '',
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '',
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value
-        },
+        get(name: string) { return cookieStore.get(name)?.value },
       },
     }
   )
 
   const { data: { session } } = await supabase.auth.getSession()
-
-  if (!session) {
-    redirect('/')
-  }
+  if (!session) redirect('/')
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white p-8">
-      <nav className="flex justify-between items-center mb-10 border-b border-white/10 pb-5">
-        <h1 className="text-xl font-bold text-blue-500">DEVSTEP</h1>
-        <div className="flex gap-6 text-sm text-gray-400">
-          <span className="text-white border-b-2 border-blue-500">Aperçu</span>
-          <span>Projets</span>
-          <span>Paramètres</span>
+    <div className="min-h-screen bg-slate-950 text-white">
+      <nav className="border-b border-white/10 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50">
+        <div className="max-w-5xl mx-auto px-6 flex items-center justify-between h-16">
+          <span className="font-black text-xl text-blue-500">DEVSTEP</span>
+          <div className="flex space-x-8">
+            <button className="text-sm font-medium border-b-2 border-blue-500 pb-5 pt-5 text-white">Aperçu</button>
+            <button className="text-sm font-medium text-gray-400 hover:text-white pb-5 pt-5">Projets</button>
+            <button className="text-sm font-medium text-gray-400 hover:text-white pb-5 pt-5">Paramètres</button>
+          </div>
+          <div className="text-xs text-gray-500">{session.user.email}</div>
         </div>
       </nav>
-
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-10 rounded-3xl shadow-xl">
-        <h2 className="text-3xl font-bold">Le build est réparé ! 🚀</h2>
-        <p className="mt-2 opacity-90">Ton site est maintenant prêt pour la production.</p>
-      </div>
+      <main className="max-w-5xl mx-auto p-6 mt-8">
+        <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-8 rounded-3xl shadow-2xl">
+          <h2 className="text-3xl font-bold">Bienvenue sur ton espace 🚀</h2>
+          <p className="mt-2 text-blue-100">L'interface à onglets est maintenant active.</p>
+        </div>
+      </main>
     </div>
   )
 }
