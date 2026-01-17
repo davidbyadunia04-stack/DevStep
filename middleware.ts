@@ -1,31 +1,31 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
-import { NextResponse, type NextRequest } from 'next/server'
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 
-export async function middleware(request: NextRequest) {
-  let response = NextResponse.next({ request: { headers: request.headers } })
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) { return request.cookies.get(name)?.value },
-        set(name: string, value: string, options: CookieOptions) {
-          request.cookies.set({ name, value, ...options })
-          response = NextResponse.next({ request: { headers: request.headers } })
-          response.cookies.set({ name, value, ...options })
-        },
-        remove(name: string, options: CookieOptions) {
-          request.cookies.set({ name, value: '', ...options })
-          response = NextResponse.next({ request: { headers: request.headers } })
-          response.cookies.set({ name, value: '', ...options })
-        },
-      },
+export function middleware(request: NextRequest) {
+  // 1. On vérifie si l'utilisateur est connecté (badge de session)
+  // On cherche le cookie créé par Supabase ou ton système d'auth
+  const session = request.cookies.get('sb-access-token') || request.cookies.get('session');
+
+  const { pathname } = request.nextUrl;
+
+  // 2. Si l'utilisateur n'est PAS connecté
+  if (!session) {
+    // Et qu'il essaie d'aller sur une page privée
+    if (pathname.startsWith('/upload') || pathname.startsWith('/dashboard')) {
+      // On le redirige vers la page de connexion
+      return NextResponse.redirect(new URL('/login', request.url));
     }
-  )
-  await supabase.auth.getUser()
-  return response
+  }
+
+  // 3. Si l'utilisateur EST connecté, on l'empêche d'aller sur login/register
+  if (session && (pathname === '/login' || pathname === '/register')) {
+    return NextResponse.redirect(new URL('/dashboard', request.url));
+  }
+
+  return NextResponse.next();
 }
 
+// On définit les routes que le garde du corps doit surveiller
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
+  matcher: ['/dashboard/:path*', '/upload/:path*', '/login', '/register'],
 }
