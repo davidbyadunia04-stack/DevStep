@@ -1,64 +1,27 @@
-"use client";
-import { useState } from 'react';
-import Link from 'next/link';
-import confetti from 'canvas-confetti';
-
-export default function Upload() {
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-
-  const handleUpload = () => {
-    setLoading(true);
-    
-    // Simulation du téléchargement
-    setTimeout(() => {
-      setLoading(false);
-      setSuccess(true);
-      
-      // 1. Son de trompette
-      const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3');
-      audio.play();
-
-      // 2. Explosion de confettis
-      confetti({
-        particleCount: 150,
-        spread: 70,
-        origin: { y: 0.6 }
-      });
-    }, 3000); // Attente de 3 secondes
-  };
-
+export default function UploadPage() {
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 font-sans">
-      <div className="max-w-xl w-full bg-white rounded-[3rem] shadow-2xl p-10 text-center border border-slate-100">
+    <div className="min-h-screen bg-[#11141d] text-white p-10 flex flex-col items-center">
+      <h1 className="text-3xl font-black mb-8 italic text-blue-500">Hébergement de fichiers</h1>
+      
+      {/* Zone de Drop */}
+      <div className="w-full max-w-2xl border-2 border-dashed border-blue-500/30 bg-[#1a1f2b] rounded-[40px] p-20 flex flex-col items-center justify-center hover:border-blue-500 transition-all cursor-pointer group shadow-2xl">
+        <div className="w-20 h-20 bg-blue-600/10 rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+          <span className="text-4xl">☁️</span>
+        </div>
         
-        {!success ? (
-          <>
-            <h1 className="text-3xl font-black mb-4">Prêt à publier ? 🚀</h1>
-            <div className={`p-12 border-4 border-dashed rounded-[2rem] transition-all ${loading ? 'border-blue-500 animate-pulse' : 'border-blue-100'}`}>
-              <div className="text-6xl mb-4">{loading ? '⚙️' : '📁'}</div>
-              <p className="font-bold text-slate-700">{loading ? 'Analyse du projet...' : 'Glisse ton dossier ici'}</p>
-            </div>
-
-            <button 
-              onClick={handleUpload}
-              disabled={loading}
-              className={`w-full mt-8 py-5 rounded-2xl font-black text-xl transition shadow-xl ${loading ? 'bg-slate-300' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
-            >
-              {loading ? 'Chargement...' : 'Lancer la mise en ligne'}
-            </button>
-          </>
-        ) : (
-          <div className="py-10 animate-bounce">
-            <div className="text-8xl mb-6">🎉</div>
-            <h2 className="text-4xl font-black text-blue-600 mb-2">FÉLICITATIONS !</h2>
-            <p className="text-slate-500 mb-8 font-bold text-lg">Ton projet est officiellement en ligne !</p>
-            <Link href="/dashboard" className="bg-slate-900 text-white px-8 py-4 rounded-2xl font-bold">
-              Voir mon Dashboard
-            </Link>
-          </div>
-        )}
+        <h2 className="text-xl font-bold mb-2">Glissez-déposez vos fichiers ici</h2>
+        <p className="text-gray-500 text-sm mb-6">Ou cliquez pour parcourir vos documents</p>
+        
+        <button className="px-8 py-3 bg-blue-600 hover:bg-blue-700 rounded-xl font-black text-xs uppercase tracking-widest transition-all">
+          Sélectionner un fichier
+        </button>
+        
+        <input type="file" className="hidden" id="fileInput" />
       </div>
+
+      <p className="mt-10 text-[10px] text-gray-600 uppercase font-bold tracking-[0.2em]">
+        Taille max : 500 MB | Formats acceptés : PDF, PNG, JPG, ZIP
+      </p>
     </div>
   );
 }
