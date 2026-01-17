@@ -2,22 +2,27 @@ import Link from 'next/link';
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen w-full flex flex-col items-center justify-center bg-gradient-to-br from-[#d49db1] via-[#8c9fb8] to-[#6d8fb3] text-[#0a2342]">
-      <h1 className="text-5xl font-black mb-4 uppercase tracking-tighter">DevStep</h1>
-      <p className="text-sm font-bold mb-10 opacity-70 uppercase tracking-widest">Bienvenue sur votre plateforme</p>
-      
-      <div className="flex gap-4">
-        <Link href="/login" className="px-8 py-3 bg-[#0a2342] text-white rounded-xl font-bold hover:scale-105 transition-transform shadow-lg">
-          CONNEXION
+    <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#0b0e14] text-white p-6 text-center">
+      {/* Logo / Nom */}
+      <h1 className="text-6xl font-black italic tracking-tighter text-blue-500 mb-4">DEVSTEP</h1>
+      <p className="text-gray-400 font-bold uppercase tracking-[0.3em] mb-12 text-sm">Hébergement Cloud Haute Performance</p>
+
+      {/* Boutons d'action */}
+      <div className="flex flex-col sm:flex-row gap-6 w-full max-w-md">
+        <Link href="/upload" className="flex-1 py-4 bg-blue-600 hover:bg-blue-700 rounded-2xl font-black text-xs uppercase tracking-widest shadow-[0_0_30px_rgba(37,99,235,0.3)] transition-all">
+          Déposer un fichier
         </Link>
-        <Link href="/register" className="px-8 py-3 bg-white/30 backdrop-blur-md border border-white/40 rounded-xl font-bold hover:scale-105 transition-transform shadow-lg">
-          S'INSCRIRE
+        <Link href="/login" className="flex-1 py-4 bg-[#1a1f2b] border border-white/10 hover:border-white/30 rounded-2xl font-black text-xs uppercase tracking-widest transition-all">
+          Se Connecter
         </Link>
       </div>
 
-      <Link href="/dashboard" className="mt-10 text-xs font-bold underline opacity-50 hover:opacity-100">
-        Accéder directement au Dashboard (Démo)
-      </Link>
+      {/* Info footer */}
+      <div className="mt-16 grid grid-cols-3 gap-8 opacity-40 grayscale">
+        <div className="text-[10px] font-bold uppercase italic">Sécurisé</div>
+        <div className="text-[10px] font-bold uppercase italic">Rapide</div>
+        <div className="text-[10px] font-bold uppercase italic">Gratuit</div>
+      </div>
     </div>
   );
 }
