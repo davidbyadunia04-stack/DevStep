@@ -1,4 +1,6 @@
+"use client"
 import Link from 'next/link'
+import Image from 'next/image'
 
 export default function HomePage() {
   return (
@@ -6,23 +8,31 @@ export default function HomePage() {
       
       {/* --- MENU NAVBAR --- */}
       <nav className="w-full py-5 px-10 flex justify-between items-center border-b border-white/5 bg-[#0b0e14]/80 backdrop-blur-md fixed top-0 z-50">
-        <div className="text-xl font-black italic text-blue-600 tracking-tighter">DEVSTEP</div>
+        <Link href="/" className="flex items-center gap-3">
+          {/* Ton logo rond qui est dans le dossier public */}
+          <Image 
+            src="/logo.png" 
+            alt="DevStep" 
+            width={35} 
+            height={35} 
+            className="rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)]"
+          />
+          <span className="text-xl font-black italic text-blue-600 tracking-tighter">DEVSTEP</span>
+        </Link>
         
         <div className="flex gap-10 items-center">
           <Link href="/" className="text-[11px] font-bold uppercase tracking-widest hover:text-blue-500 transition-all">
             Accueil
           </Link>
-
-          <Link href="mailto:TON_EMAIL@GMAIL.COM" className="text-[11px] font-bold uppercase tracking-widest hover:text-blue-500 transition-all">
+          <Link href="mailto:support@devstep.com" className="text-[11px] font-bold uppercase tracking-widest hover:text-blue-500 transition-all">
             Support
           </Link>
-
           <a 
             href="https://discord.gg/MsZ455Yh" 
             target="_blank" 
-            className="px-5 py-2 bg-[#5865F2] hover:bg-[#4752C4] rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-[0_0_15px_rgba(88,101,242,0.3)]"
+            className="px-5 py-2 bg-[#5865F2] hover:bg-[#4752C4] rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg"
           >
-            Rejoindre Discord
+            Discord
           </a>
         </div>
       </nav>
@@ -35,28 +45,33 @@ export default function HomePage() {
         </h1>
 
         {/* SECTION COMMUNAUTÉ */}
-        <div className="max-w-2xl mb-12 px-6 py-8 border border-white/5 bg-white/[0.02] rounded-[40px] backdrop-blur-sm">
-          <p className="text-blue-400 font-black uppercase tracking-[0.3em] text-[10px] mb-4">La Communauté</p>
-          <h2 className="text-lg md:text-xl font-medium text-gray-300 italic leading-relaxed">
+        <div className="max-w-2xl mb-12 px-8 py-10 border border-white/5 bg-white/[0.02] rounded-[40px] backdrop-blur-sm shadow-2xl">
+          <div className="flex justify-center mb-4">
+             <span className="px-4 py-1 bg-blue-600/20 text-blue-400 rounded-full text-[9px] font-black uppercase tracking-[0.3em]">
+               Notre Philosophie
+             </span>
+          </div>
+          <h2 className="text-xl md:text-2xl font-medium text-gray-200 italic leading-relaxed">
             "Rejoignez une communauté qui sera toujours à l'écoute de vos demandes ; sainte et respectueuse."
           </h2>
+          <p className="mt-6 text-[10px] text-gray-500 font-bold uppercase tracking-widest">
+            Service 100% Gratuit pour tous
+          </p>
         </div>
 
         {/* BOUTONS D'ACTION */}
         <div className="flex flex-col sm:flex-row gap-6 w-full max-w-md">
-          <Link href="/upload" className="flex-1 py-5 bg-blue-600 hover:bg-blue-700 rounded-2xl font-black text-xs uppercase tracking-widest text-center shadow-[0_10px_30px_rgba(37,99,235,0.2)] transition-all">
+          <Link href="/upload" className="flex-1 py-5 bg-blue-600 hover:bg-blue-700 rounded-2xl font-black text-xs uppercase tracking-widest text-center shadow-[0_10px_30px_rgba(37,99,235,0.2)] transition-all hover:scale-105">
             Héberger un fichier
           </Link>
-          <Link href="/login" className="flex-1 py-5 bg-[#1a1f2b] border border-white/10 rounded-2xl font-black text-xs uppercase tracking-widest text-center transition-all">
+          <Link href="/login" className="flex-1 py-5 bg-[#1a1f2b] border border-white/10 rounded-2xl font-black text-xs uppercase tracking-widest text-center transition-all hover:scale-105">
             Mon Espace
           </Link>
         </div>
-
       </main>
 
-      {/* Footer */}
-      <footer className="p-8 text-center opacity-30">
-        <p className="text-[9px] font-bold uppercase tracking-[0.5em]">© DevStep Cloud Storage</p>
+      <footer className="p-10 text-center opacity-20">
+        <p className="text-[9px] font-bold uppercase tracking-[0.4em]">© DevStep Cloud Storage — Lubumbashi</p>
       </footer>
 
     </div>
