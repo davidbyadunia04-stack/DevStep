@@ -1,29 +1,54 @@
 "use client"
-import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 export default function LoginPage() {
-  return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-[#d49db1] via-[#8c9fb8] to-[#6d8fb3] p-4">
-      <div className="relative w-full max-w-sm p-10 rounded-[40px] bg-white/30 backdrop-blur-xl border border-white/40 shadow-2xl flex flex-col items-center">
-        <h1 className="text-2xl font-black text-[#0a2342] mb-8 uppercase tracking-widest">Connexion</h1>
-        
-        <form className="w-full space-y-4">
-          <input type="email" placeholder="Email" className="w-full p-4 bg-[#3d5a80]/50 text-white placeholder-white/60 rounded-2xl outline-none border border-transparent focus:border-white/40" />
-          <input type="password" placeholder="Mot de passe" className="w-full p-4 bg-[#3d5a80]/50 text-white placeholder-white/60 rounded-2xl outline-none border border-transparent focus:border-white/40" />
-          
-          <Link href="/dashboard" className="block w-full py-4 bg-[#0a2342] text-center text-white font-black rounded-2xl shadow-lg hover:scale-105 transition-transform uppercase text-xs tracking-widest mt-4">
-            SE CONNECTER
-          </Link>
-        </form>
+  const router = useRouter()
 
-        {/* SECTION SUPPORT TECHNIQUE */}
-        <div className="mt-8 text-center border-t border-[#0a2342]/10 pt-6 w-full">
-          <p className="text-[10px] text-[#0a2342]/60 font-bold uppercase mb-1 text-center">Un problème avec votre compte ?</p>
-          <a href="mailto:TON_EMAIL@GMAIL.COM" className="text-[11px] text-[#0a2342] underline font-black hover:text-blue-800">
-            CONTACTER LE SUPPORT
-          </a>
-        </div>
-      </div>
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    // 1. ICI ON CRÉE LE BADGE (Le cookie de session)
+    // On lui donne le nom 'session' que ton middleware recherche
+    document.cookie = "session=active; path=/; max-age=86400" // expire après 24h
+
+    // 2. ON REDIRIGE VERS LE DASHBOARD
+    router.push('/dashboard')
+    
+    // On force un petit rafraîchissement pour que le middleware voie le cookie
+    setTimeout(() => {
+        window.location.reload()
+    }, 100)
+  }
+
+  return (
+    <div className="min-h-screen bg-[#0b0e14] text-white flex items-center justify-center p-6">
+      <form onSubmit={handleLogin} className="w-full max-w-sm p-8 bg-[#161b26] rounded-[30px] border border-white/5 shadow-2xl">
+        <h1 className="text-3xl font-black italic text-blue-600 mb-8 text-center">CONNEXION</h1>
+        
+        <input 
+          type="email" 
+          placeholder="Email" 
+          className="w-full p-4 bg-[#0b0e14] border border-white/10 rounded-xl mb-4 text-sm focus:border-blue-500 outline-none transition-all"
+          required 
+        />
+        <input 
+          type="password" 
+          placeholder="Mot de passe" 
+          className="w-full p-4 bg-[#0b0e14] border border-white/10 rounded-xl mb-6 text-sm focus:border-blue-500 outline-none transition-all"
+          required 
+        />
+
+        <button 
+          type="submit"
+          className="w-full py-4 bg-blue-600 hover:bg-blue-700 rounded-xl font-black uppercase text-xs tracking-widest transition-all"
+        >
+          Se Connecter
+        </button>
+
+        <p className="mt-6 text-center text-gray-500 text-[10px] uppercase font-bold tracking-widest">
+          Pas de compte ? <span className="text-blue-500 cursor-pointer">S'inscrire</span>
+        </p>
+      </form>
     </div>
   )
 }
