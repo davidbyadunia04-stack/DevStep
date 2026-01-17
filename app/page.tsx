@@ -10,7 +10,7 @@ export default function HomePage() {
       <nav className="w-full py-5 px-10 flex justify-between items-center border-b border-white/5 bg-[#0b0e14]/80 backdrop-blur-md fixed top-0 z-50">
         <Link href="/" className="flex items-center gap-3">
           <Image 
-            src="/icon.png" 
+            src="/logo.png" 
             alt="DevStep" 
             width={35} 
             height={35} 
@@ -36,13 +36,14 @@ export default function HomePage() {
       {/* --- CONTENU PRINCIPAL --- */}
       <main className="flex-1 flex flex-col items-center justify-center p-6 mt-32 text-center">
         
-        {/* LE LOGO CENTRAL */}
-        <div className="mb-6 animate-bounce-slow">
+        {/* LOGO CENTRAL - Utilise maintenant /logo.png */}
+        <div className="mb-6">
           <Image 
-            src="/icon.png" 
+            src="/logo.png" 
             alt="DevStep Logo Large" 
             width={120} 
             height={120} 
+            priority
             className="rounded-full shadow-[0_0_40px_rgba(59,130,246,0.4)] border-4 border-blue-600/20"
           />
         </div>
