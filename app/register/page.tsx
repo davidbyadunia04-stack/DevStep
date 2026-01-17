@@ -1,62 +1,34 @@
-import Link from 'next/link';
-
-export default function LoginPage() {
+export default function RegisterPage() {
   return (
-    // Fond avec dégradé fluide
-    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-4">
-      
-      {/* Carte avec effet de verre */}
-      <div className="relative w-full max-w-md p-8 rounded-3xl bg-white/20 backdrop-blur-lg border border-white/30 shadow-2xl">
+    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-[#d49db1] via-[#8c9fb8] to-[#6d8fb3] p-4">
+      {/* Carte Glassmorphism */}
+      <div className="relative w-full max-w-sm p-8 rounded-[40px] bg-white/30 backdrop-blur-xl border border-white/40 shadow-2xl flex flex-col items-center">
         
-        {/* Icône de profil cercle bleu foncé */}
-        <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-24 h-24 bg-[#1a365d] rounded-full flex items-center justify-center border-4 border-white/50 shadow-lg">
-          <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-          </svg>
-        </div>
-
-        <form className="mt-8 space-y-6">
-          {/* Champ Email */}
-          <div className="relative">
-            <input 
-              type="email" 
-              placeholder="Email ID" 
-              className="w-full pl-12 pr-4 py-3 bg-[#2d4a6d]/80 text-white placeholder-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
-            />
-            <span className="absolute left-4 top-3.5 text-gray-300">👤</span>
-          </div>
-
-          {/* Champ Password */}
-          <div className="relative">
-            <input 
-              type="password" 
-              placeholder="Password" 
-              className="w-full pl-12 pr-4 py-3 bg-[#2d4a6d]/80 text-white placeholder-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
-            />
-            <span className="absolute left-4 top-3.5 text-gray-300">🔒</span>
-          </div>
-
-          {/* Options supplémentaires */}
-          <div className="flex items-center justify-between text-xs text-blue-900 font-medium">
-            <label className="flex items-center cursor-pointer">
-              <input type="checkbox" className="mr-2 rounded" /> Remember me
-            </label>
-            <button type="button" className="hover:underline">Forgot Password?</button>
-          </div>
-
-          {/* Bouton Login */}
-          <button className="w-full py-3 bg-[#1a365d] text-white font-bold rounded-xl shadow-lg hover:bg-blue-900 transition-all uppercase tracking-widest text-sm">
-            Login
+        <h1 className="text-2xl font-black text-[#0a2342] mb-2 uppercase tracking-tighter">Créer un compte</h1>
+        <p className="text-[10px] text-[#0a2342]/60 font-bold mb-6 uppercase">Rejoignez la communauté DevStep</p>
+        
+        <form className="w-full space-y-4">
+          <input 
+            type="email" 
+            placeholder="Email" 
+            className="w-full p-3 bg-[#3d5a80]/60 text-white placeholder-white/70 rounded-lg outline-none border border-transparent focus:border-white/50" 
+          />
+          <input 
+            type="password" 
+            placeholder="Mot de passe" 
+            className="w-full p-3 bg-[#3d5a80]/60 text-white placeholder-white/70 rounded-lg outline-none border border-transparent focus:border-white/50" 
+          />
+          
+          <button className="w-full py-3 bg-blue-600 text-white font-bold rounded-xl shadow-lg hover:bg-blue-700 transition-all uppercase tracking-widest text-xs">
+            S'inscrire
           </button>
         </form>
 
-        {/* LIEN DE CONTACT (Ta demande spécifique) */}
-        <div className="mt-8 text-center border-t border-white/20 pt-4">
-          <p className="text-sm text-blue-900">
-            Un problème ? <a href="mailto:ton-email@exemple.com" className="font-bold hover:underline underline-offset-4">Contactez-nous par email</a>
-          </p>
+        <div className="mt-6">
+           <p className="text-[11px] text-[#0a2342] font-bold uppercase">
+             Déjà un membre ? <a href="/login" className="underline hover:text-blue-700">Se connecter</a>
+           </p>
         </div>
-
       </div>
     </div>
   );
