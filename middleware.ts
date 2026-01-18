@@ -2,30 +2,21 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 export function middleware(request: NextRequest) {
-  // 1. On vérifie si l'utilisateur est connecté (badge de session)
-  // On cherche le cookie créé par Supabase ou ton système d'auth
-  const session = request.cookies.get('sb-access-token') || request.cookies.get('session');
+  const session = request.cookies.get('session')
+  const { pathname } = request.nextUrl
 
-  const { pathname } = request.nextUrl;
+  // Pages privées qui demandent une connexion
+  const isProtectedRoute = pathname.startsWith('/dashboard') || pathname.startsWith('/upload')
 
-  // 2. Si l'utilisateur n'est PAS connecté
-  if (!session) {
-    // Et qu'il essaie d'aller sur une page privée
-    if (pathname.startsWith('/upload') || pathname.startsWith('/dashboard')) {
-      // On le redirige vers la page de connexion
-      return NextResponse.redirect(new URL('/login', request.url));
-    }
+  // Si l'utilisateur n'est pas connecté et tente d'entrer
+  if (!session && isProtectedRoute) {
+    return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  // 3. Si l'utilisateur EST connecté, on l'empêche d'aller sur login/register
-  if (session && (pathname === '/login' || pathname === '/register')) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
-  }
-
-  return NextResponse.next();
+  return NextResponse.next()
 }
 
-// On définit les routes que le garde du corps doit surveiller
+// On surveille uniquement les pages sensibles
 export const config = {
-  matcher: ['/dashboard/:path*', '/upload/:path*', '/login', '/register'],
+  matcher: ['/dashboard/:path*', '/upload/:path*'],
 }
