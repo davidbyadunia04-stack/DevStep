@@ -27,21 +27,30 @@ export default function HomePage() {
       {/* --- MAIN --- */}
       <main className="flex-1 flex flex-col items-center justify-center p-6 mt-32 text-center">
         
-        <div className="mb-8">
-          <Image src="/icon.png" alt="Logo" width={120} height={120} className="rounded-full shadow-[0_0_50px_rgba(59,130,246,0.3)] border-2 border-white/5" />
+        {/* --- VIDÉO PROMO (REMPLACE LE LOGO CENTRAL) --- */}
+        <div className="mb-10 w-full max-w-2xl overflow-hidden rounded-[40px] border border-white/10 shadow-[0_0_50px_rgba(59,130,246,0.15)] bg-black/20">
+          <video 
+            src="/promo.mp4" 
+            autoPlay 
+            loop 
+            muted 
+            playsInline 
+            className="w-full h-full object-cover shadow-2xl"
+          />
         </div>
 
-        <h1 className="text-7xl md:text-9xl font-black italic tracking-tighter mb-8 text-white">
+        <h1 className="text-6xl md:text-8xl font-black italic tracking-tighter mb-8 text-white">
           DEV<span className="text-blue-600">STEP.</span>
         </h1>
 
+        {/* PHILOSOPHIE */}
         <div className="max-w-2xl mb-16 px-10 py-12 border border-white/5 bg-white/[0.01] rounded-[50px] backdrop-blur-sm">
           <h2 className="text-xl md:text-2xl font-medium text-gray-300 italic leading-relaxed">
             "Rejoignez une communauté qui sera toujours à l'écoute de vos demandes ; sainte et respectueuse."
           </h2>
         </div>
 
-        {/* --- DONS --- */}
+        {/* DONS */}
         <div id="donations" className="max-w-4xl w-full mb-16 grid grid-cols-1 md:grid-cols-2 gap-6 px-4">
           <div className="p-10 border border-red-500/20 bg-red-500/[0.02] rounded-[45px] flex flex-col items-center">
             <p className="text-red-500 font-black uppercase text-[10px] mb-4">Airtel Money (RDC)</p>
@@ -55,7 +64,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* --- BOUTONS --- */}
+        {/* BOUTONS */}
         <div className="flex flex-col sm:flex-row gap-6 w-full max-w-md pb-20">
           <Link href="/upload" className="flex-1 py-5 bg-blue-600 hover:bg-blue-700 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl">Héberger</Link>
           <Link href="/login" className="flex-1 py-5 bg-[#1a1f2b] border border-white/10 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-[#252c3d]">Se Connecter</Link>
