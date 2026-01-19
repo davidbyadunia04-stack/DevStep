@@ -1,35 +1,72 @@
+"use client"
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import Image from 'next/image'
+
 export default function RegisterPage() {
+  const router = useRouter()
+  const [loading, setLoading] = useState(false)
+
+  // LA FONCTION QUI COMMANDE LE BOUTON
+  const handleRegister = (e: React.FormEvent) => {
+    e.preventDefault() // Empêche le rechargement de la page
+    setLoading(true)
+    
+    // 1. ON CRÉE LE BADGE DE SESSION DIRECTEMENT
+    document.cookie = "session=active; path=/; max-age=86400; SameSite=Lax"
+
+    // 2. PETIT DÉLAI POUR LE STYLE ET REDIRECTION
+    setTimeout(() => {
+        window.location.href = "/dashboard" // Utiliser window.location force le rafraîchissement global
+    }, 1000)
+  }
+
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-[#d49db1] via-[#8c9fb8] to-[#6d8fb3] p-4">
-      {/* Carte Glassmorphism */}
-      <div className="relative w-full max-w-sm p-8 rounded-[40px] bg-white/30 backdrop-blur-xl border border-white/40 shadow-2xl flex flex-col items-center">
+    <div className="min-h-screen bg-[#0b0e14] text-white flex items-center justify-center p-6 font-sans">
+      <div className="w-full max-w-sm">
         
-        <h1 className="text-2xl font-black text-[#0a2342] mb-2 uppercase tracking-tighter">Créer un compte</h1>
-        <p className="text-[10px] text-[#0a2342]/60 font-bold mb-6 uppercase">Rejoignez la communauté DevStep</p>
-        
-        <form className="w-full space-y-4">
+        {/* LOGO */}
+        <div className="flex justify-center mb-8">
+            <Image src="/icon.png" alt="Logo" width={60} height={60} className="rounded-full shadow-lg shadow-blue-600/20" />
+        </div>
+
+        <form onSubmit={handleRegister} className="p-8 bg-[#161b26] rounded-[30px] border border-white/5 shadow-2xl">
+          <h1 className="text-2xl font-black italic text-blue-600 mb-2 text-center uppercase tracking-tighter">Inscription</h1>
+          <p className="text-gray-500 text-[10px] text-center mb-8 font-bold uppercase tracking-widest">Rejoignez DevStep</p>
+          
+          <input 
+            type="text" 
+            placeholder="Nom complet" 
+            className="w-full p-4 bg-[#0b0e14] border border-white/10 rounded-xl mb-4 text-sm focus:border-blue-500 outline-none transition-all text-white"
+            required 
+          />
           <input 
             type="email" 
             placeholder="Email" 
-            className="w-full p-3 bg-[#3d5a80]/60 text-white placeholder-white/70 rounded-lg outline-none border border-transparent focus:border-white/50" 
+            className="w-full p-4 bg-[#0b0e14] border border-white/10 rounded-xl mb-4 text-sm focus:border-blue-500 outline-none transition-all text-white"
+            required 
           />
           <input 
             type="password" 
             placeholder="Mot de passe" 
-            className="w-full p-3 bg-[#3d5a80]/60 text-white placeholder-white/70 rounded-lg outline-none border border-transparent focus:border-white/50" 
+            className="w-full p-4 bg-[#0b0e14] border border-white/10 rounded-xl mb-6 text-sm focus:border-blue-500 outline-none transition-all text-white"
+            required 
           />
-          
-          <button className="w-full py-3 bg-blue-600 text-white font-bold rounded-xl shadow-lg hover:bg-blue-700 transition-all uppercase tracking-widest text-xs">
-            S'inscrire
+
+          <button 
+            type="submit"
+            disabled={loading}
+            className="w-full py-4 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 rounded-xl font-black uppercase text-xs tracking-widest transition-all shadow-lg shadow-blue-600/20"
+          >
+            {loading ? "Création du compte..." : "S'inscrire"}
           </button>
         </form>
-
-        <div className="mt-6">
-           <p className="text-[11px] text-[#0a2342] font-bold uppercase">
-             Déjà un membre ? <a href="/login" className="underline hover:text-blue-700">Se connecter</a>
-           </p>
-        </div>
+        
+        <p className="mt-8 text-center text-gray-500 text-[10px] uppercase font-bold tracking-widest">
+          Déjà un membre ? <Link href="/login" className="text-blue-500 hover:underline">Se connecter</Link>
+        </p>
       </div>
     </div>
-  );
+  )
 }
