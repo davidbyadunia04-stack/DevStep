@@ -2,7 +2,7 @@
 import { useState, useRef } from 'react'
 import Link from 'next/link'
 
-// --- TYPES (Pour corriger tes erreurs d'image) ---
+// --- TYPES (Règle les erreurs de tes captures d'écran) ---
 interface Post {
   id: number;
   user: string;
@@ -39,31 +39,34 @@ export default function FeedPage() {
   const [activeTab, setActiveTab] = useState('home')
   const [postText, setPostText] = useState("")
   const [searchQuery, setSearchQuery] = useState("")
-  
-  // Correction de l'erreur "SetStateAction<null>"
   const [videoFile, setVideoFile] = useState<File | null>(null)
   const [isPlaying, setIsPlaying] = useState(true)
   const videoRef = useRef<HTMLVideoElement>(null)
 
+  // --- DONNÉES ---
   const [posts, setPosts] = useState<Post[]>([
-    { id: 1, user: "Jordan_Dev", content: "Bienvenue sur DEVSTEP ! 🚀", likes: 24, isLiked: false, isFollowed: false, comments: ["Top !", "Propre le design"] },
-    { id: 2, user: "Sarah_Code", content: "Le mode vidéo est en ligne.", likes: 15, isLiked: false, isFollowed: false, comments: [] }
+    { id: 1, user: "Jordan_Dev", content: "Bienvenue sur DEVSTEP ! 🚀", likes: 24, isLiked: false, isFollowed: false, comments: ["Stylé !"] },
+    { id: 2, user: "Sarah_Code", content: "L'upload vidéo est OK.", likes: 15, isLiked: false, isFollowed: false, comments: [] }
   ])
 
   const [reels, setReels] = useState<Reel[]>([
     { id: 1, user: "DesignMaster", caption: "Mon setup 2026 💻", likes: 1200, isLiked: false, videoUrl: null }
   ])
 
-  // --- LOGIQUE ACTIONS ---
+  // --- ACTIONS ---
   const togglePlay = () => {
     if (videoRef.current) {
-      if (isPlaying) videoRef.current.pause(); else videoRef.current.play()
+      isPlaying ? videoRef.current.pause() : videoRef.current.play()
       setIsPlaying(!isPlaying)
     }
   }
 
   const handleLikePost = (id: number) => {
     setPosts(posts.map(p => p.id === id ? { ...p, likes: p.isLiked ? p.likes - 1 : p.likes + 1, isLiked: !p.isLiked } : p))
+  }
+
+  const handleLikeReel = (id: number) => {
+    setReels(reels.map(r => r.id === id ? { ...r, likes: r.isLiked ? r.likes - 1 : r.likes + 1, isLiked: !r.isLiked } : r))
   }
 
   const handleFollow = (id: number) => {
@@ -81,14 +84,13 @@ export default function FeedPage() {
     setPostText(""); setVideoFile(null)
   }
 
-  const filteredPosts = posts.filter(p => p.content.toLowerCase().includes(searchQuery.toLowerCase()))
-
   return (
-    <div className="min-h-screen bg-[#0b0e14] text-white font-sans overflow-x-hidden selection:bg-blue-500/30">
+    <div className="min-h-screen bg-[#0b0e14] text-white font-sans overflow-x-hidden">
       
+      {/* HEADER (Navigation DM comprise) */}
       {activeTab !== 'play' && (
         <nav className="p-5 flex justify-between items-center sticky top-0 bg-[#0b0e14]/90 backdrop-blur-xl z-[100] border-b border-white/5">
-          <Link href="/" className="font-black italic text-blue-500 text-2xl tracking-tighter">DEVSTEP</Link>
+          <Link href="/" className="font-black italic text-blue-500 text-2xl tracking-tighter hover:scale-105 transition-all">DEVSTEP</Link>
           <div className="flex gap-4 items-center">
              <button onClick={() => setActiveTab('dms')} className={`p-2 rounded-full transition-all ${activeTab === 'dms' ? 'bg-blue-600' : 'bg-white/5'}`}><Icons.Message /></button>
              <div className="bg-white/5 px-4 py-1.5 rounded-full text-[10px] font-black uppercase text-gray-400">Shoncs</div>
@@ -101,86 +103,98 @@ export default function FeedPage() {
         {/* RECHERCHE */}
         {activeTab === 'search' && (
           <div className="animate-in slide-in-from-top-4 mb-8 pt-4">
-            <input autoFocus value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Rechercher un dev..." className="w-full bg-[#161b22] border border-white/10 rounded-2xl py-4 px-6 outline-none focus:border-blue-500/50" />
+            <input autoFocus value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Rechercher..." className="w-full bg-[#161b22] border border-white/10 rounded-2xl py-4 px-6 outline-none focus:border-blue-500/50" />
           </div>
         )}
 
-        {/* RÉELS INTERACTIFS */}
+        {/* RÉELS (Pause, Like, Profil) */}
         {activeTab === 'play' && (
-          <div className="h-screen w-full bg-black relative snap-y snap-mandatory" onClick={togglePlay}>
+          <div className="h-screen w-full bg-black relative" onClick={togglePlay}>
             {reels.map(reel => (
-              <div key={reel.id} className="h-full w-full relative flex flex-col justify-end pb-36 p-6 snap-start">
-                <div className="absolute inset-0 flex items-center justify-center bg-black">
-                  {reel.videoUrl ? (
-                    <video ref={videoRef} src={reel.videoUrl} autoPlay loop muted className="w-full h-full object-cover" />
-                  ) : <div className="text-white/20"><Icons.Play /></div>}
-                  {!isPlaying && <div className="absolute z-50 bg-black/40 p-8 rounded-full animate-in zoom-in-50"><Icons.Pause /></div>}
+              <div key={reel.id} className="h-full w-full relative flex flex-col justify-end pb-36 p-6">
+                <div className="absolute inset-0 flex items-center justify-center">
+                  {reel.videoUrl ? <video ref={videoRef} src={reel.videoUrl} autoPlay loop muted className="w-full h-full object-cover" /> : <Icons.Play />}
+                  {!isPlaying && <div className="absolute z-50 bg-black/40 p-8 rounded-full"><Icons.Pause /></div>}
                 </div>
                 <div className="relative z-10 space-y-4">
-                  <Link href={`/profile/${reel.user}`} className="flex items-center gap-3 w-fit hover:scale-105 transition-transform">
+                  <Link href={`/profile/${reel.user}`} className="flex items-center gap-3 w-fit">
                     <div className="w-10 h-10 rounded-full bg-blue-600 border-2 border-white shadow-xl" />
-                    <span className="font-black italic text-sm uppercase drop-shadow-lg">@{reel.user}</span>
+                    <span className="font-black italic text-sm uppercase">@{reel.user}</span>
                   </Link>
-                  <p className="text-sm font-medium drop-shadow-2xl">{reel.caption}</p>
+                  <p className="text-sm shadow-black drop-shadow-lg">{reel.caption}</p>
+                </div>
+                <div className="absolute right-4 bottom-40 z-10 flex flex-col gap-6">
+                  <button onClick={(e) => {e.stopPropagation(); handleLikeReel(reel.id)}} className={`flex flex-col items-center gap-1 ${reel.isLiked ? 'text-red-500' : ''}`}>
+                    <Icons.Heart filled={reel.isLiked} /> <span className="text-[10px] font-black">{reel.likes}</span>
+                  </button>
                 </div>
               </div>
             ))}
           </div>
         )}
 
-        {/* FEED AVEC TOUTES LES FONCTIONS */}
+        {/* FEED (Abonnement, Likes Uniques, Commentaires) */}
         {(activeTab === 'home' || activeTab === 'search') && (
           <div className="space-y-6 pb-24 pt-4">
-            {filteredPosts.map(post => (
-              <div key={post.id} className="bg-[#161b22] border border-white/10 rounded-[35px] p-6 hover:border-white/20 transition-all shadow-xl">
+            {posts.filter(p => p.content.toLowerCase().includes(searchQuery.toLowerCase())).map(post => (
+              <div key={post.id} className="bg-[#161b22] border border-white/10 rounded-[35px] p-6 shadow-xl">
                 <div className="flex justify-between items-center mb-4">
-                  <Link href={`/profile/${post.user}`} className="flex items-center gap-3 group">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-700 group-hover:ring-2 ring-blue-500 transition-all" />
+                  <Link href={`/profile/${post.user}`} className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-700" />
                     <span className="text-xs font-black italic uppercase text-blue-400">@{post.user}</span>
                   </Link>
-                  <button onClick={() => handleFollow(post.id)} className={`px-5 py-2 rounded-full text-[9px] font-black uppercase transition-all active:scale-95 ${post.isFollowed ? 'bg-white/10 text-white/50' : 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'}`}>
+                  <button onClick={() => handleFollow(post.id)} className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase transition-all ${post.isFollowed ? 'bg-white/10 text-white/50' : 'bg-blue-600 text-white'}`}>
                     {post.isFollowed ? 'Abonné' : "S'abonner"}
                   </button>
                 </div>
                 <p className="text-sm text-gray-300 leading-relaxed mb-6">{post.content}</p>
-                <div className="flex gap-8 border-t border-white/5 pt-4">
-                  <button onClick={() => handleLikePost(post.id)} className={`flex items-center gap-2 text-[10px] font-black transition-all hover:scale-110 ${post.isLiked ? 'text-red-500' : 'text-white/30'}`}>
+                <div className="flex gap-6 border-t border-white/5 pt-4">
+                  <button onClick={() => handleLikePost(post.id)} className={`flex items-center gap-2 text-[10px] font-black ${post.isLiked ? 'text-red-500' : 'text-white/30'}`}>
                     <Icons.Heart filled={post.isLiked} /> {post.likes}
                   </button>
-                  <button onClick={() => alert(`Comments: ${post.comments.join(', ')}`)} className="flex items-center gap-2 text-[10px] font-black text-white/30 hover:text-blue-500">
-                    <Icons.Message /> {post.comments.length}
-                  </button>
+                  <button onClick={() => alert(post.comments.join('\n'))} className="flex items-center gap-2 text-[10px] font-black text-white/30"><Icons.Message /> {post.comments.length}</button>
                 </div>
               </div>
             ))}
           </div>
         )}
 
-        {/* ZONE ADD (MIXTE) */}
+        {/* DMs (Placeholder) */}
+        {activeTab === 'dms' && (
+          <div className="text-center mt-20 opacity-20 font-black italic uppercase text-xl">Tes messages privés ici</div>
+        )}
+
+        {/* ZONE PUBLICATION (Texte + Vidéo) */}
         {activeTab === 'add' && (
-          <div className="bg-[#161b22] border border-white/10 rounded-[40px] p-8 mt-10 shadow-2xl animate-in zoom-in-95">
-            <h2 className="text-xl font-black italic uppercase text-blue-500 mb-6">Nouveau Contenu</h2>
-            <textarea value={postText} onChange={(e) => setPostText(e.target.value)} placeholder="Un message ou une légende de Reel..." className="w-full bg-transparent min-h-[120px] outline-none text-lg resize-none mb-4" />
-            
-            <div className="relative border-2 border-dashed border-white/10 rounded-2xl p-6 mb-8 text-center hover:border-blue-500/50 transition-colors">
+          <div className="bg-[#161b22] border border-white/10 rounded-[40px] p-8 mt-10 shadow-2xl">
+            <div className="flex justify-between items-center mb-6">
+                 <h2 className="text-xl font-black italic uppercase text-blue-500">Créer</h2>
+                 <button onClick={() => {setActiveTab('home'); setVideoFile(null)}}><Icons.X /></button>
+            </div>
+            <textarea value={postText} onChange={(e) => setPostText(e.target.value)} placeholder="Une légende ?" className="w-full bg-transparent min-h-[100px] outline-none text-lg resize-none mb-4" />
+            <div className="relative border-2 border-dashed border-white/10 rounded-2xl p-6 mb-8 text-center">
               <input type="file" accept="video/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => { if(e.target.files?.[0]) setVideoFile(e.target.files[0]) }} />
               <Icons.Video />
-              <p className="text-[10px] font-black uppercase text-gray-500 mt-2">{videoFile ? videoFile.name : "Clique pour ajouter une vidéo"}</p>
+              <p className="text-[10px] font-black uppercase text-gray-500 mt-2">{videoFile ? videoFile.name : "Ajouter un Reel"}</p>
             </div>
-
-            <button onClick={handlePublish} className="w-full bg-blue-600 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-blue-500 transition-all active:scale-95 shadow-xl shadow-blue-600/20">Publier sur DEVSTEP</button>
+            <button onClick={handlePublish} className="w-full bg-blue-600 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg active:scale-95 transition-all">Publier</button>
           </div>
         )}
       </main>
 
-      {/* NAV BAR */}
+      {/* NAV BAR BARRE BASSE */}
       <div className="fixed bottom-8 left-1/2 -translate-x-1/2 w-[90%] max-w-sm bg-[#161b22]/90 backdrop-blur-2xl border border-white/10 rounded-full p-2 flex justify-around items-center z-[100] shadow-2xl">
-        <button onClick={() => setActiveTab('home')} className={`p-4 transition-all ${activeTab === 'home' ? 'text-blue-500 scale-110' : 'text-white/30 hover:text-white'}`}><Icons.Home /></button>
-        <button onClick={() => setActiveTab('search')} className={`p-4 transition-all ${activeTab === 'search' ? 'text-blue-500 scale-110' : 'text-white/30 hover:text-white'}`}><Icons.Search /></button>
-        <button onClick={() => setActiveTab('add')} className={`w-14 h-14 rounded-full bg-blue-600 flex items-center justify-center text-3xl transition-all hover:bg-blue-500 shadow-lg shadow-blue-600/30 ${activeTab === 'add' ? 'rotate-45 bg-red-500' : ''}`}>+</button>
-        <button onClick={() => setActiveTab('play')} className={`p-4 transition-all ${activeTab === 'play' ? 'text-blue-500 scale-110' : 'text-white/30 hover:text-white'}`}><Icons.Play /></button>
-        <Link href="/profile" className="p-4 text-white/30 hover:text-white transition-all"><Icons.User /></Link>
+        <button onClick={() => setActiveTab('home')} className={`p-4 ${activeTab === 'home' ? 'text-blue-500 scale-110' : 'text-white/30 hover:text-white'}`}><Icons.Home /></button>
+        <button onClick={() => setActiveTab('search')} className={`p-4 ${activeTab === 'search' ? 'text-blue-500 scale-110' : 'text-white/30 hover:text-white'}`}><Icons.Search /></button>
+        <button onClick={() => setActiveTab('add')} className={`w-14 h-14 rounded-full bg-blue-600 flex items-center justify-center text-3xl font-light transition-all ${activeTab === 'add' ? 'rotate-45 bg-red-500' : ''}`}>+</button>
+        <button onClick={() => setActiveTab('play')} className={`p-4 ${activeTab === 'play' ? 'text-blue-500 scale-110' : 'text-white/30 hover:text-white'}`}><Icons.Play /></button>
+        <Link href="/profile" className="p-4 text-white/30 hover:text-white"><Icons.User /></Link>
       </div>
+
+      <style jsx global>{`
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      `}</style>
     </div>
   )
 }
