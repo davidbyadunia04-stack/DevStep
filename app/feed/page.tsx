@@ -11,7 +11,9 @@ const Icons = {
   Heart: ({ active }: { active?: boolean }) => <svg width="24" height="24" viewBox="0 0 24 24" fill={active ? "#ff4b63" : "none"} stroke={active ? "#ff4b63" : "currentColor"} strokeWidth="2"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>,
   Message: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>,
   Eye: () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>,
-  Camera: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+  Camera: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>,
+  Plus: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
+  Bell: () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
 }
 
 export default function FeedPage() {
@@ -26,24 +28,47 @@ export default function FeedPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [showCommentsFor, setShowCommentsFor] = useState<number | null>(null)
   const [commentInput, setCommentInput] = useState("")
+  
+  // Nouveaux états pour Abonnés et Notifications
+  const [followers, setFollowers] = useState(0)
+  const [notifications, setNotifications] = useState<any[]>([])
+  const [showNotifs, setShowNotifs] = useState(false)
 
   useEffect(() => {
-    const savedPosts = localStorage.getItem('ds_posts')
-    const savedUser = localStorage.getItem('ds_user')
-    const savedTheme = localStorage.getItem('ds_theme')
-    const savedPic = localStorage.getItem('ds_pic')
-    if (savedPosts) setMyPosts(JSON.parse(savedPosts))
-    if (savedUser) setUsername(savedUser)
-    if (savedTheme) setThemeColor(savedTheme)
-    if (savedPic) setProfilePic(savedPic)
+    const saved = {
+      posts: localStorage.getItem('ds_posts'),
+      user: localStorage.getItem('ds_user'),
+      theme: localStorage.getItem('ds_theme'),
+      pic: localStorage.getItem('ds_pic'),
+      fols: localStorage.getItem('ds_fols'),
+      notifs: localStorage.getItem('ds_notifs')
+    }
+    if (saved.posts) setMyPosts(JSON.parse(saved.posts))
+    if (saved.user) setUsername(saved.user)
+    if (saved.theme) setThemeColor(saved.theme)
+    if (saved.pic) setProfilePic(saved.pic)
+    if (saved.fols) setFollowers(parseInt(saved.fols))
+    if (saved.notifs) setNotifications(JSON.parse(saved.notifs))
   }, [])
 
   useEffect(() => {
     localStorage.setItem('ds_posts', JSON.stringify(myPosts))
     localStorage.setItem('ds_user', username)
     localStorage.setItem('ds_theme', themeColor)
+    localStorage.setItem('ds_fols', followers.toString())
+    localStorage.setItem('ds_notifs', JSON.stringify(notifications))
     if (profilePic) localStorage.setItem('ds_pic', profilePic)
-  }, [myPosts, username, themeColor, profilePic])
+  }, [myPosts, username, themeColor, profilePic, followers, notifications])
+
+  const addNotification = (text: string) => {
+    const newNotif = { id: Date.now(), text, time: 'À l\'instant' }
+    setNotifications([newNotif, ...notifications])
+  }
+
+  const handleFollow = () => {
+    setFollowers(prev => prev + 1)
+    addNotification("Quelqu'un vient de s'abonner à votre profil ! 🚀")
+  }
 
   const toggleLike = (id: number) => {
     setMyPosts(prev => prev.map(p => 
@@ -68,28 +93,22 @@ export default function FeedPage() {
         media: mediaFile,
         type: isReel ? 'reel' : 'photo',
         likes: 0,
-        views: Math.floor(Math.random() * 100),
+        views: 0,
         isLiked: false,
         comments: []
       }
-      setMyPosts([newPost, ...myPosts])
-      setActiveTab('home')
-      setPostText(""); setMediaFile(null); setIsReel(false)
+      setMyPosts([newPost, ...myPosts]); setActiveTab('home'); setPostText(""); setMediaFile(null); setIsReel(false)
     }
   }
 
   const renderText = (text: string) => {
     return text.split(' ').map((word, i) => (
       word.startsWith('#') 
-      ? <span key={i} className="font-bold cursor-pointer" style={{ color: themeColor }} onClick={(e) => { e.stopPropagation(); setSearchQuery(word); setActiveTab('search'); }}>{word} </span> 
+      ? <span key={i} className="font-bold cursor-pointer" style={{ color: themeColor }} onClick={() => { setSearchQuery(word); setActiveTab('search'); }}>{word} </span> 
       : word + ' '
     ))
   }
 
-  const filteredPosts = myPosts.filter(p => 
-    p.content.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    p.user.toLowerCase().includes(searchQuery.toLowerCase())
-  )
   const totalViews = myPosts.reduce((acc, p) => acc + (p.views || 0), 0)
   const totalLikes = myPosts.reduce((acc, p) => acc + (p.likes || 0), 0)
 
@@ -98,58 +117,76 @@ export default function FeedPage() {
       <main className="max-w-xl mx-auto p-4 pb-40">
 
         {/* --- HEADER --- */}
-        <div className="pt-6 mb-10 flex justify-between items-center">
-          <a 
-            href="https://dev-step.vercel.app/"
-            className="text-3xl font-black italic uppercase hover:opacity-80 transition-all active:scale-95" 
-            style={{ color: themeColor }}
-          >
-            DEVSTEP
-          </a>
+        <div className="pt-6 mb-10 flex justify-between items-center relative">
+          <a href="https://dev-step.vercel.app/" className="text-3xl font-black italic uppercase" style={{ color: themeColor }}>DEVSTEP</a>
           
-          {(activeTab === 'profile' || activeTab === 'settings') && (
-            <button onClick={() => setActiveTab('settings')} className="p-3 bg-white/5 rounded-full hover:bg-white/10">
-              <Icons.Settings />
+          <div className="flex gap-4 items-center">
+            <button onClick={() => setShowNotifs(!showNotifs)} className="relative p-2 bg-white/5 rounded-full">
+              <Icons.Bell />
+              {notifications.length > 0 && <span className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full border-2 border-[#0b0e14]"></span>}
             </button>
+            {(activeTab === 'profile' || activeTab === 'settings') && (
+              <button onClick={() => setActiveTab('settings')} className="p-2 bg-white/5 rounded-full"><Icons.Settings /></button>
+            )}
+          </div>
+
+          {/* NOTIFS DROPDOWN */}
+          {showNotifs && (
+            <div className="absolute top-16 right-0 w-64 bg-[#161b22] border border-white/10 rounded-3xl p-4 z-[200] shadow-2xl animate-in fade-in zoom-in-95">
+              <h3 className="text-[10px] font-black uppercase opacity-40 mb-4">Notifications</h3>
+              <div className="space-y-3 max-h-60 overflow-y-auto">
+                {notifications.length > 0 ? notifications.map(n => (
+                  <div key={n.id} className="text-[11px] bg-white/5 p-3 rounded-xl border-l-2" style={{ borderLeftColor: themeColor }}>{n.text}</div>
+                )) : <p className="text-[10px] opacity-30">Aucune notification</p>}
+              </div>
+            </div>
           )}
         </div>
 
         {/* --- RECHERCHE --- */}
         {activeTab === 'search' && (
           <div className="animate-in fade-in">
-            <input 
-              autoFocus
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Rechercher #hashtag ou utilisateur..." 
-              className="w-full bg-[#161b22] border border-white/10 rounded-2xl py-5 px-6 mb-8 outline-none focus:border-blue-500 transition-all shadow-inner"
-            />
+            <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Rechercher #hashtag..." className="w-full bg-[#161b22] border border-white/10 rounded-2xl py-5 px-6 mb-8 outline-none focus:border-blue-500" />
             <div className="space-y-4">
-              {filteredPosts.length > 0 ? filteredPosts.map(post => (
-                <div key={post.id} className="bg-[#161b22]/40 p-5 rounded-[25px] border border-white/5 flex gap-4 items-center">
-                   <div className="w-12 h-12 rounded-xl bg-gray-800 overflow-hidden shrink-0">
-                     {post.media && <img src={post.media} className="w-full h-full object-cover" />}
-                   </div>
-                   <div>
-                     <p className="font-bold text-sm">@{post.user}</p>
-                     <p className="text-xs opacity-50 truncate max-w-[200px]">{post.content}</p>
-                   </div>
+              {myPosts.filter(p => p.content.toLowerCase().includes(searchQuery.toLowerCase())).map(post => (
+                <div key={post.id} className="bg-[#161b22]/40 p-5 rounded-[25px] flex gap-4 items-center">
+                   <div className="w-12 h-12 rounded-xl bg-gray-800 overflow-hidden shrink-0">{post.media && <img src={post.media} className="w-full h-full object-cover" />}</div>
+                   <div><p className="font-bold text-sm">@{post.user}</p><p className="text-xs opacity-50 truncate">{post.content}</p></div>
                 </div>
-              )) : <div className="text-center opacity-30 mt-20">Aucun résultat pour "{searchQuery}"</div>}
+              ))}
             </div>
           </div>
         )}
 
-        {/* --- REELS (PLAY) --- */}
+        {/* --- REELS (TikTok Style) --- */}
         {activeTab === 'play' && (
-          <div className="space-y-6">
-            <h2 className="text-xl font-bold italic mb-4">REELS</h2>
+          <div className="space-y-8">
+            <h2 className="text-xl font-bold italic">RÉELS</h2>
             {myPosts.filter(p => p.type === 'reel').map(reel => (
-              <div key={reel.id} className="relative aspect-[9/16] bg-black rounded-[40px] overflow-hidden border border-white/10 shadow-2xl">
+              <div key={reel.id} className="relative aspect-[9/16] bg-black rounded-[50px] overflow-hidden shadow-2xl border border-white/5">
                 <video src={reel.media} autoPlay loop muted className="w-full h-full object-cover" />
-                <div className="absolute bottom-10 left-8 right-8">
-                  <p className="font-black text-lg mb-2">@{reel.user}</p>
-                  <p className="text-sm opacity-90">{reel.content}</p>
+                
+                {/* Overlay Interactions Réel */}
+                <div className="absolute right-4 bottom-32 flex flex-col gap-6 items-center">
+                  <button onClick={() => toggleLike(reel.id)} className="flex flex-col items-center gap-1 active:scale-150 transition-transform">
+                    <Icons.Heart active={reel.isLiked} />
+                    <span className="text-[10px] font-bold">{reel.likes || 0}</span>
+                  </button>
+                  <button onClick={() => setShowCommentsFor(reel.id)} className="flex flex-col items-center gap-1">
+                    <Icons.Message />
+                    <span className="text-[10px] font-bold">{reel.comments?.length || 0}</span>
+                  </button>
+                  <button onClick={handleFollow} className="w-8 h-8 rounded-full flex items-center justify-center bg-white text-black"><Icons.Plus /></button>
+                </div>
+
+                <div className="absolute bottom-10 left-8 right-16">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-full border-2 border-white overflow-hidden">
+                      {profilePic ? <img src={profilePic} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center bg-gray-600">S</div>}
+                    </div>
+                    <span className="font-black text-lg shadow-black drop-shadow-lg">@{reel.user}</span>
+                  </div>
+                  <p className="text-sm shadow-black drop-shadow-lg leading-relaxed">{renderText(reel.content)}</p>
                 </div>
               </div>
             ))}
@@ -158,56 +195,46 @@ export default function FeedPage() {
 
         {/* --- HOME FEED --- */}
         {activeTab === 'home' && (
-          <div className="space-y-10">
-            {myPosts.length > 0 ? myPosts.map(post => (
-              <div key={post.id} className="bg-[#161b22] rounded-[40px] border border-white/5 overflow-hidden shadow-2xl transition-all">
-                <div className="p-6 flex items-center gap-4">
-                  <div className="w-11 h-11 rounded-full bg-gray-800 overflow-hidden border-2" style={{ borderColor: themeColor }}>
-                    {profilePic ? <img src={profilePic} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center font-bold" style={{ backgroundColor: themeColor }}>{username[0]}</div>}
+          <div className="space-y-10 animate-in fade-in">
+            {myPosts.map(post => (
+              <div key={post.id} className="bg-[#161b22] rounded-[40px] border border-white/5 overflow-hidden shadow-2xl">
+                <div className="p-6 flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-11 h-11 rounded-full bg-gray-800 overflow-hidden border-2" style={{ borderColor: themeColor }}>
+                      {profilePic ? <img src={profilePic} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center font-bold" style={{ backgroundColor: themeColor }}>{username[0]}</div>}
+                    </div>
+                    <span className="font-bold text-sm">@{post.user}</span>
                   </div>
-                  <span className="font-bold text-sm uppercase tracking-wider">@{post.user}</span>
+                  <button onClick={handleFollow} className="px-4 py-1.5 rounded-full text-[10px] font-black uppercase border border-white/10 hover:bg-white/5 transition-all">S'abonner</button>
                 </div>
 
-                {post.media && (
-                  post.type === 'reel' 
-                  ? <video src={post.media} controls className="w-full max-h-[500px] object-cover" />
-                  : <img src={post.media} className="w-full max-h-[500px] object-cover" />
-                )}
+                {post.media && (post.type === 'reel' ? <video src={post.media} controls className="w-full" /> : <img src={post.media} className="w-full" />)}
 
                 <div className="p-7">
                   <div className="text-sm mb-8 leading-relaxed text-gray-200">{renderText(post.content)}</div>
                   <div className="flex gap-10 items-center">
                     <button onClick={() => toggleLike(post.id)} className="flex flex-col items-center gap-2 active:scale-150 transition-transform">
-                      <Icons.Heart active={post.isLiked} />
-                      <span className="text-[10px] font-black opacity-60">{post.likes || 0}</span>
+                      <Icons.Heart active={post.isLiked} /><span className="text-[10px] font-black opacity-60">{post.likes || 0}</span>
                     </button>
                     <button onClick={() => setShowCommentsFor(showCommentsFor === post.id ? null : post.id)} className="flex flex-col items-center gap-2">
-                      <Icons.Message />
-                      <span className="text-[10px] font-black opacity-60">{post.comments?.length || 0}</span>
+                      <Icons.Message /><span className="text-[10px] font-black opacity-60">{post.comments?.length || 0}</span>
                     </button>
                   </div>
 
                   {showCommentsFor === post.id && (
-                    <div className="mt-8 pt-6 border-t border-white/5 space-y-4">
+                    <div className="mt-8 pt-6 border-t border-white/5 space-y-4 animate-in slide-in-from-top-2">
                       {post.comments?.map((c: any) => (
-                        <div key={c.id} className="text-xs bg-white/5 p-4 rounded-2xl">
-                          <span className="font-bold text-blue-400 mr-2">@{c.user}</span> {c.text}
-                        </div>
+                        <div key={c.id} className="text-xs bg-white/5 p-4 rounded-2xl"><span className="font-bold mr-2" style={{ color: themeColor }}>@{c.user}</span> {c.text}</div>
                       ))}
                       <div className="flex gap-3">
-                        <input 
-                          value={commentInput} 
-                          onChange={(e) => setCommentInput(e.target.value)} 
-                          placeholder="Votre commentaire..." 
-                          className="flex-1 bg-white/5 border border-white/10 rounded-full px-5 py-3 text-xs outline-none focus:border-blue-500" 
-                        />
+                        <input value={commentInput} onChange={(e) => setCommentInput(e.target.value)} placeholder="Ajouter un commentaire..." className="flex-1 bg-white/5 border border-white/10 rounded-full px-5 py-3 text-xs outline-none" />
                         <button onClick={() => addComment(post.id)} className="p-3 rounded-full text-white" style={{ backgroundColor: themeColor }}>➤</button>
                       </div>
                     </div>
                   )}
                 </div>
               </div>
-            )) : <div className="text-center py-32 opacity-20 font-bold italic uppercase tracking-[0.2em]">Flux vide</div>}
+            ))}
           </div>
         )}
 
@@ -220,23 +247,20 @@ export default function FeedPage() {
                   {profilePic ? <img src={profilePic} className="w-full h-full object-cover" /> : <span className="text-4xl font-black">{username[0]}</span>}
                 </div>
               </div>
-              <h2 className="text-2xl font-black italic tracking-tighter">@{username}</h2>
+              <h2 className="text-2xl font-black italic">@{username}</h2>
             </div>
             
-            <div className="flex justify-center gap-16 mb-12 text-center">
+            <div className="flex justify-center gap-12 mb-12 text-center">
                <div><p className="text-2xl font-black">{totalViews}</p><p className="text-[10px] uppercase text-gray-500 font-black tracking-widest">Vues</p></div>
                <div><p className="text-2xl font-black">{totalLikes}</p><p className="text-[10px] uppercase text-gray-500 font-black tracking-widest">Likes</p></div>
+               <div><p className="text-2xl font-black" style={{ color: themeColor }}>{followers}</p><p className="text-[10px] uppercase text-gray-500 font-black tracking-widest">Abonnés</p></div>
             </div>
 
-            <div className="grid grid-cols-3 gap-1 rounded-3xl overflow-hidden border border-white/5">
+            <div className="grid grid-cols-3 gap-1 rounded-3xl overflow-hidden">
               {myPosts.map(p => (
-                <div key={p.id} className="aspect-[3/4] bg-[#161b22] relative overflow-hidden group">
-                  {p.media ? (
-                    p.type === 'reel' ? <video src={p.media} className="w-full h-full object-cover" /> : <img src={p.media} className="w-full h-full object-cover" />
-                  ) : <div className="p-3 text-[8px] opacity-20">{p.content}</div>}
-                  <div className="absolute bottom-3 left-3 flex items-center gap-1 text-white text-[11px] font-black drop-shadow-lg">
-                    <Icons.Eye /> {p.views || 0}
-                  </div>
+                <div key={p.id} className="aspect-[3/4] bg-[#161b22] relative overflow-hidden active:opacity-70">
+                  {p.media ? (p.type === 'reel' ? <video src={p.media} className="w-full h-full object-cover" /> : <img src={p.media} className="w-full h-full object-cover" />) : <div className="p-3 text-[8px] opacity-20">{p.content}</div>}
+                  <div className="absolute bottom-3 left-3 flex items-center gap-1 text-white text-[11px] font-black"><Icons.Eye /> {p.views || 0}</div>
                 </div>
               ))}
             </div>
@@ -245,7 +269,7 @@ export default function FeedPage() {
 
         {/* --- AJOUTER --- */}
         {activeTab === 'add' && (
-          <div className="bg-[#161b22] rounded-[45px] p-10 mt-6 border border-white/5 shadow-2xl">
+          <div className="bg-[#161b22] rounded-[45px] p-10 mt-6 border border-white/5">
             <textarea value={postText} onChange={(e) => setPostText(e.target.value)} placeholder="Exprimez-vous... #dev #step" className="w-full bg-transparent min-h-[150px] outline-none text-xl mb-8" />
             <div className="border-2 border-dashed border-white/10 rounded-[30px] p-12 mb-10 text-center relative hover:bg-white/5 transition-all">
                <input type="file" accept="image/*,video/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e: any) => {
@@ -255,16 +279,14 @@ export default function FeedPage() {
                }} />
                <p className="text-xs font-black uppercase tracking-widest opacity-30">{mediaFile ? "Prêt ✅" : "Photo / Vidéo"}</p>
             </div>
-            <button onClick={handlePublish} className="w-full py-6 rounded-3xl font-black uppercase text-xs tracking-[0.3em]" style={{ backgroundColor: themeColor }}>Publier</button>
+            <button onClick={handlePublish} className="w-full py-6 rounded-3xl font-black uppercase text-xs" style={{ backgroundColor: themeColor }}>Publier</button>
           </div>
         )}
 
         {/* --- SETTINGS --- */}
         {activeTab === 'settings' && (
-          <div className="bg-[#161b22] rounded-[40px] p-10 border border-white/5 space-y-8 animate-in zoom-in-95">
+          <div className="bg-[#161b22] rounded-[40px] p-10 border border-white/5 space-y-8">
             <h2 className="text-xl font-black uppercase tracking-widest">Réglages</h2>
-            
-            {/* Changer Photo de profil */}
             <div className="flex flex-col items-center gap-4 py-4 border-b border-white/5">
               <div className="w-20 h-20 rounded-full bg-gray-800 overflow-hidden relative border-2 border-dashed border-white/20">
                 {profilePic ? <img src={profilePic} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center opacity-30"><Icons.Camera /></div>}
@@ -276,7 +298,6 @@ export default function FeedPage() {
               </div>
               <p className="text-[10px] font-black uppercase opacity-60">Changer ma photo</p>
             </div>
-
             <div>
               <p className="text-[10px] font-black uppercase opacity-40 mb-4">Nom d'utilisateur</p>
               <input value={username} onChange={(e) => setUsername(e.target.value)} className="w-full bg-white/5 border border-white/10 p-5 rounded-2xl outline-none" />
@@ -285,9 +306,8 @@ export default function FeedPage() {
               <p className="text-[10px] font-black uppercase opacity-40 mb-4">Couleur du thème</p>
               <input type="color" value={themeColor} onChange={(e) => setThemeColor(e.target.value)} className="w-full h-16 rounded-2xl bg-transparent cursor-pointer" />
             </div>
-            
             <div className="space-y-4">
-              <button onClick={() => setActiveTab('profile')} className="w-full py-5 bg-white text-black rounded-2xl font-black uppercase text-[10px] shadow-xl active:scale-95 transition-all">Sauvegarder</button>
+              <button onClick={() => setActiveTab('profile')} className="w-full py-5 bg-white text-black rounded-2xl font-black uppercase text-[10px]">Sauvegarder</button>
               <p className="text-center text-[11px] font-bold italic opacity-70" style={{ color: themeColor }}>Bientôt des nouveaux thèmes PREMIUM seront dispo.</p>
             </div>
           </div>
