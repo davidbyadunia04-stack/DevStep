@@ -44,7 +44,12 @@ export default function FeedPage() {
     if (profilePic) localStorage.setItem('ds_pic', profilePic)
   }, [myPosts, username, themeColor, profilePic])
 
-  // Rendu intelligent du texte avec hashtags cliquables
+  const toggleLike = (id: number) => {
+    setMyPosts(prev => prev.map(p => 
+      p.id === id ? { ...p, isLiked: !p.isLiked, likes: p.isLiked ? (p.likes || 0) - 1 : (p.likes || 0) + 1 } : p
+    ))
+  }
+
   const renderText = (text: string) => {
     return text.split(' ').map((word, i) => (
       word.startsWith('#') 
@@ -62,46 +67,34 @@ export default function FeedPage() {
         media: mediaFile,
         type: isReel ? 'reel' : 'photo',
         likes: 0,
-        views: 0,
+        views: Math.floor(Math.random() * 50),
         isLiked: false,
         comments: []
       }
-      setMyPosts([newPost, ...myPosts]); setActiveTab('home'); setPostText(""); setMediaFile(null)
+      setMyPosts([newPost, ...myPosts]); setActiveTab('home'); setPostText(""); setMediaFile(null); setIsReel(false)
     }
   }
 
-  const filteredPosts = myPosts.filter(p => 
-    p.content.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    p.user.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  const totalViews = myPosts.reduce((acc, p) => acc + (p.views || 0), 0)
+  const totalLikes = myPosts.reduce((acc, p) => acc + (p.likes || 0), 0)
 
   return (
     <div className="min-h-screen bg-[#0b0e14] text-white">
       <main className="max-w-xl mx-auto p-4 pb-40">
 
-        {/* --- SEARCH --- */}
-        {activeTab === 'search' && (
-          <div className="pt-6">
-            <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Rechercher #hashtag, @user..." className="w-full bg-[#161b22] border border-white/10 rounded-2xl py-4 px-6 mb-8 outline-none focus:border-blue-500 text-sm" />
-            <div className="space-y-4">
-              {filteredPosts.map(post => (
-                <div key={post.id} className="bg-[#161b22]/50 p-4 rounded-2xl border border-white/5 flex gap-4 items-center cursor-pointer" onClick={() => setActiveTab('home')}>
-                   <div className="w-10 h-10 rounded-lg bg-gray-800 overflow-hidden shrink-0">{post.media && <img src={post.media} className="w-full h-full object-cover" />}</div>
-                   <div><p className="font-bold text-xs">@{post.user}</p><p className="text-[10px] opacity-60 truncate">{post.content}</p></div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        {/* --- HEADER --- */}
+        <div className="pt-4 mb-8 flex justify-between items-center">
+          <button onClick={() => setActiveTab('home')} className="text-2xl font-black italic uppercase hover:scale-105 transition-transform" style={{ color: themeColor }}>DEVSTEP</button>
+          {activeTab === 'profile' && <button onClick={() => setActiveTab('settings')} className="p-2 bg-white/5 rounded-full"><Icons.Settings /></button>}
+        </div>
 
-        {/* --- HOME --- */}
+        {/* --- HOME FEED --- */}
         {activeTab === 'home' && (
-          <div className="space-y-8 pt-4">
-            <h1 className="text-2xl font-black italic uppercase" style={{ color: themeColor }}>DEVSTEP</h1>
-            {myPosts.map(post => (
-              <div key={post.id} className="bg-[#161b22] rounded-[35px] border border-white/5 overflow-hidden">
+          <div className="space-y-8 animate-in fade-in duration-500">
+            {myPosts.length > 0 ? myPosts.map(post => (
+              <div key={post.id} className="bg-[#161b22] rounded-[35px] border border-white/5 overflow-hidden shadow-2xl">
                 <div className="p-5 flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gray-800 overflow-hidden">
+                  <div className="w-10 h-10 rounded-full bg-gray-800 overflow-hidden shrink-0">
                     {profilePic ? <img src={profilePic} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center font-bold" style={{ backgroundColor: themeColor }}>{username[0]}</div>}
                   </div>
                   <span className="font-bold text-sm">@{post.user}</span>
@@ -110,59 +103,72 @@ export default function FeedPage() {
                 <div className="p-6">
                   <div className="text-sm mb-6 leading-relaxed">{renderText(post.content)}</div>
                   <div className="flex gap-8 items-center">
-                    <button onClick={() => {}} className="flex flex-col items-center gap-1"><Icons.Heart /><span className="text-[10px] font-bold">{post.likes}</span></button>
-                    <button className="flex flex-col items-center gap-1"><Icons.Message /><span className="text-[10px] font-bold">0</span></button>
+                    <button onClick={() => toggleLike(post.id)} className="flex flex-col items-center gap-1 active:scale-125 transition-transform">
+                      <Icons.Heart active={post.isLiked} />
+                      <span className="text-[10px] font-bold">{post.likes || 0}</span>
+                    </button>
+                    <button onClick={() => setShowCommentsFor(showCommentsFor === post.id ? null : post.id)} className="flex flex-col items-center gap-1">
+                      <Icons.Message />
+                      <span className="text-[10px] font-bold">{post.comments?.length || 0}</span>
+                    </button>
                   </div>
                 </div>
               </div>
-            ))}
+            )) : <p className="text-center opacity-20 py-20">Rien à voir ici... Publie ton premier post !</p>}
           </div>
         )}
 
-        {/* --- PROFIL (Grid TikTok) --- */}
+        {/* --- PROFIL (TikTok Grid) --- */}
         {activeTab === 'profile' && (
-          <div className="pt-8">
-            <div className="flex justify-end mb-6"><button onClick={() => setActiveTab('settings')} className="p-2 bg-white/5 rounded-full"><Icons.Settings /></button></div>
+          <div className="animate-in slide-in-from-bottom-4 duration-500">
             <div className="flex flex-col items-center mb-10">
-              <div className="w-24 h-24 rounded-full p-1 mb-4" style={{ backgroundColor: themeColor }}><div className="w-full h-full bg-[#161b22] rounded-full overflow-hidden flex items-center justify-center">{profilePic ? <img src={profilePic} className="w-full h-full object-cover" /> : <span className="text-3xl font-black">{username[0]}</span>}</div></div>
+              <div className="w-24 h-24 rounded-full p-1 mb-4 shadow-2xl" style={{ backgroundColor: themeColor }}>
+                <div className="w-full h-full bg-[#161b22] rounded-full overflow-hidden flex items-center justify-center border-4 border-[#0b0e14]">
+                  {profilePic ? <img src={profilePic} className="w-full h-full object-cover" /> : <span className="text-3xl font-black">{username[0]}</span>}
+                </div>
+              </div>
               <h2 className="text-xl font-bold">@{username}</h2>
+            </div>
+            <div className="flex justify-center gap-12 mb-10 text-center">
+               <div><p className="text-xl font-black">{totalViews}</p><p className="text-[9px] uppercase text-gray-500 font-bold">Vues</p></div>
+               <div><p className="text-xl font-black">{totalLikes}</p><p className="text-[9px] uppercase text-gray-500 font-bold">Likes</p></div>
             </div>
             <div className="grid grid-cols-3 gap-1">
               {myPosts.map(p => (
-                <div key={p.id} className="aspect-[3/4] bg-[#161b22] relative overflow-hidden">
+                <div key={p.id} className="aspect-[3/4] bg-[#161b22] relative overflow-hidden group">
                   {p.media ? (p.type === 'reel' ? <video src={p.media} className="w-full h-full object-cover" /> : <img src={p.media} className="w-full h-full object-cover" />) : <div className="p-2 text-[8px] opacity-20">{p.content}</div>}
-                  <div className="absolute bottom-2 left-2 flex items-center gap-1 text-white text-[10px] font-bold"><Icons.Eye /> {p.views}</div>
+                  <div className="absolute bottom-2 left-2 flex items-center gap-1 text-white text-[10px] font-bold drop-shadow-md"><Icons.Eye /> {p.views || 0}</div>
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* --- ADD --- */}
+        {/* --- AJOUTER (Add) --- */}
         {activeTab === 'add' && (
-          <div className="bg-[#161b22] rounded-[40px] p-8 mt-10 border border-white/5">
-            <textarea value={postText} onChange={(e) => setPostText(e.target.value)} placeholder="Ecris quelque chose avec #hashtags..." className="w-full bg-transparent min-h-[120px] outline-none text-lg mb-6" />
-            <div className="border-2 border-dashed border-white/10 rounded-2xl p-8 mb-6 text-center relative">
+          <div className="bg-[#161b22] rounded-[40px] p-8 mt-4 border border-white/5 animate-in zoom-in-95">
+            <textarea value={postText} onChange={(e) => setPostText(e.target.value)} placeholder="Quoi de neuf ? #dev #step" className="w-full bg-transparent min-h-[120px] outline-none text-lg mb-6" />
+            <div className="border-2 border-dashed border-white/10 rounded-2xl p-8 mb-6 text-center relative hover:bg-white/5 transition-colors">
                <input type="file" accept="image/*,video/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e: any) => {
                  const file = e.target.files?.[0]; if(file) {
                    const reader = new FileReader(); reader.onloadend = () => { setMediaFile(reader.result as string); setIsReel(file.type.includes('video')) }; reader.readAsDataURL(file);
                  }
                }} />
-               <p className="text-xs font-bold opacity-40">Ajouter média</p>
+               <p className="text-xs font-bold opacity-40">{mediaFile ? "Média prêt ✅" : "Photo ou Vidéo"}</p>
             </div>
-            <button onClick={handlePublish} className="w-full py-5 rounded-2xl font-black uppercase text-[10px]" style={{ backgroundColor: themeColor }}>Publier</button>
+            <button onClick={handlePublish} className="w-full py-5 rounded-2xl font-black uppercase text-[10px] shadow-xl active:scale-95 transition-transform" style={{ backgroundColor: themeColor }}>Publier sur DEVSTEP</button>
           </div>
         )}
 
       </main>
 
-      {/* --- NAV BAR --- */}
+      {/* --- BARRE DE NAVIGATION --- */}
       <div className="fixed bottom-8 left-1/2 -translate-x-1/2 w-[92%] max-w-md bg-[#161b22]/95 backdrop-blur-2xl border border-white/10 rounded-full p-2 flex justify-around items-center z-[100] shadow-2xl">
-        <button onClick={() => setActiveTab('home')} className="p-4" style={{ color: activeTab === 'home' ? themeColor : 'white', opacity: activeTab === 'home' ? 1 : 0.2 }}><Icons.Home /></button>
-        <button onClick={() => setActiveTab('search')} className="p-4" style={{ color: activeTab === 'search' ? themeColor : 'white', opacity: activeTab === 'search' ? 1 : 0.2 }}><Icons.Search /></button>
-        <button onClick={() => setActiveTab('add')} className="w-14 h-14 rounded-full flex items-center justify-center text-3xl text-white shadow-lg" style={{ backgroundColor: themeColor }}>+</button>
-        <button onClick={() => setActiveTab('play')} className="p-4" style={{ color: activeTab === 'play' ? themeColor : 'white', opacity: activeTab === 'play' ? 1 : 0.2 }}><Icons.Play /></button>
-        <button onClick={() => setActiveTab('profile')} className="p-4" style={{ color: activeTab === 'profile' ? themeColor : 'white', opacity: activeTab === 'profile' ? 1 : 0.2 }}><Icons.User /></button>
+        <button onClick={() => setActiveTab('home')} className="p-4 transition-all" style={{ color: activeTab === 'home' ? themeColor : 'white', opacity: activeTab === 'home' ? 1 : 0.2 }}><Icons.Home /></button>
+        <button onClick={() => setActiveTab('search')} className="p-4 transition-all" style={{ color: activeTab === 'search' ? themeColor : 'white', opacity: activeTab === 'search' ? 1 : 0.2 }}><Icons.Search /></button>
+        <button onClick={() => setActiveTab('add')} className="w-14 h-14 rounded-full flex items-center justify-center text-3xl text-white shadow-lg active:rotate-90 transition-all" style={{ backgroundColor: themeColor }}>+</button>
+        <button onClick={() => setActiveTab('play')} className="p-4 transition-all" style={{ color: activeTab === 'play' ? themeColor : 'white', opacity: activeTab === 'play' ? 1 : 0.2 }}><Icons.Play /></button>
+        <button onClick={() => setActiveTab('profile')} className="p-4 transition-all" style={{ color: (activeTab === 'profile' || activeTab === 'settings') ? themeColor : 'white', opacity: (activeTab === 'profile' || activeTab === 'settings') ? 1 : 0.2 }}><Icons.User /></button>
       </div>
     </div>
   )
