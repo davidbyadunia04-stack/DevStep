@@ -1,6 +1,7 @@
 "use client"
 import { useState, useEffect } from 'react'
 
+// --- ICONS ---
 const Icons = {
   Home: () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
   Search: () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>,
@@ -13,6 +14,7 @@ const Icons = {
 }
 
 export default function FeedPage() {
+  // --- STATES ---
   const [activeTab, setActiveTab] = useState('home')
   const [postText, setPostText] = useState("")
   const [mediaFile, setMediaFile] = useState<string | null>(null)
@@ -23,18 +25,18 @@ export default function FeedPage() {
   const [myPosts, setMyPosts] = useState<any[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [showCommentsFor, setShowCommentsFor] = useState<number | null>(null)
+  const [commentInput, setCommentInput] = useState("")
 
+  // --- PERSISTENCE ---
   useEffect(() => {
-    const saved = {
-      posts: localStorage.getItem('ds_posts'),
-      user: localStorage.getItem('ds_user'),
-      theme: localStorage.getItem('ds_theme'),
-      pic: localStorage.getItem('ds_pic')
-    }
-    if (saved.posts) setMyPosts(JSON.parse(saved.posts))
-    if (saved.user) setUsername(saved.user)
-    if (saved.theme) setThemeColor(saved.theme)
-    if (saved.pic) setProfilePic(saved.pic)
+    const savedPosts = localStorage.getItem('ds_posts')
+    const savedUser = localStorage.getItem('ds_user')
+    const savedTheme = localStorage.getItem('ds_theme')
+    const savedPic = localStorage.getItem('ds_pic')
+    if (savedPosts) setMyPosts(JSON.parse(savedPosts))
+    if (savedUser) setUsername(savedUser)
+    if (savedTheme) setThemeColor(savedTheme)
+    if (savedPic) setProfilePic(savedPic)
   }, [])
 
   useEffect(() => {
@@ -44,18 +46,19 @@ export default function FeedPage() {
     if (profilePic) localStorage.setItem('ds_pic', profilePic)
   }, [myPosts, username, themeColor, profilePic])
 
+  // --- ACTIONS ---
   const toggleLike = (id: number) => {
     setMyPosts(prev => prev.map(p => 
-      p.id === id ? { ...p, isLiked: !p.isLiked, likes: p.isLiked ? (p.likes || 0) - 1 : (p.likes || 0) + 1 } : p
+      p.id === id ? { ...p, isLiked: !p.isLiked, likes: p.isLiked ? (p.likes || 1) - 1 : (p.likes || 0) + 1 } : p
     ))
   }
 
-  const renderText = (text: string) => {
-    return text.split(' ').map((word, i) => (
-      word.startsWith('#') 
-      ? <span key={i} className="font-bold cursor-pointer" style={{ color: themeColor }} onClick={(e) => { e.stopPropagation(); setSearchQuery(word); setActiveTab('search'); }}>{word} </span> 
-      : word + ' '
+  const addComment = (postId: number) => {
+    if (!commentInput.trim()) return
+    setMyPosts(prev => prev.map(p => 
+      p.id === postId ? { ...p, comments: [...(p.comments || []), { id: Date.now(), text: commentInput, user: username }] } : p
     ))
+    setCommentInput("")
   }
 
   const handlePublish = () => {
@@ -67,108 +70,247 @@ export default function FeedPage() {
         media: mediaFile,
         type: isReel ? 'reel' : 'photo',
         likes: 0,
-        views: Math.floor(Math.random() * 50),
+        views: Math.floor(Math.random() * 100),
         isLiked: false,
         comments: []
       }
-      setMyPosts([newPost, ...myPosts]); setActiveTab('home'); setPostText(""); setMediaFile(null); setIsReel(false)
+      setMyPosts([newPost, ...myPosts])
+      setActiveTab('home')
+      setPostText(""); setMediaFile(null); setIsReel(false)
     }
   }
 
+  const renderText = (text: string) => {
+    return text.split(' ').map((word, i) => (
+      word.startsWith('#') 
+      ? <span key={i} className="font-bold cursor-pointer" style={{ color: themeColor }} onClick={(e) => { e.stopPropagation(); setSearchQuery(word); setActiveTab('search'); }}>{word} </span> 
+      : word + ' '
+    ))
+  }
+
+  // --- CALCULS ---
+  const filteredPosts = myPosts.filter(p => 
+    p.content.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    p.user.toLowerCase().includes(searchQuery.toLowerCase())
+  )
   const totalViews = myPosts.reduce((acc, p) => acc + (p.views || 0), 0)
   const totalLikes = myPosts.reduce((acc, p) => acc + (p.likes || 0), 0)
 
   return (
-    <div className="min-h-screen bg-[#0b0e14] text-white">
+    <div className="min-h-screen bg-[#0b0e14] text-white font-sans">
       <main className="max-w-xl mx-auto p-4 pb-40">
 
-        {/* --- HEADER --- */}
-        <div className="pt-4 mb-8 flex justify-between items-center">
-          <button onClick={() => setActiveTab('home')} className="text-2xl font-black italic uppercase hover:scale-105 transition-transform" style={{ color: themeColor }}>DEVSTEP</button>
-          {activeTab === 'profile' && <button onClick={() => setActiveTab('settings')} className="p-2 bg-white/5 rounded-full"><Icons.Settings /></button>}
+        {/* --- LOGO / HEADER (BOUTON ACCUEIL) --- */}
+        <div className="pt-6 mb-10 flex justify-between items-center">
+          <button 
+            onClick={() => { setActiveTab('home'); window.scrollTo(0,0); }} 
+            className="text-3xl font-black italic uppercase hover:opacity-80 transition-all active:scale-95" 
+            style={{ color: themeColor }}
+          >
+            DEVSTEP
+          </button>
+          
+          {(activeTab === 'profile' || activeTab === 'settings') && (
+            <button onClick={() => setActiveTab('settings')} className="p-3 bg-white/5 rounded-full hover:bg-white/10">
+              <Icons.Settings />
+            </button>
+          )}
         </div>
+
+        {/* --- RECHERCHE --- */}
+        {activeTab === 'search' && (
+          <div className="animate-in fade-in">
+            <input 
+              autoFocus
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Rechercher #hashtag ou utilisateur..." 
+              className="w-full bg-[#161b22] border border-white/10 rounded-2xl py-5 px-6 mb-8 outline-none focus:border-blue-500 transition-all shadow-inner"
+            />
+            <div className="space-y-4">
+              {filteredPosts.length > 0 ? filteredPosts.map(post => (
+                <div key={post.id} className="bg-[#161b22]/40 p-5 rounded-[25px] border border-white/5 flex gap-4 items-center">
+                   <div className="w-12 h-12 rounded-xl bg-gray-800 overflow-hidden shrink-0">
+                     {post.media && <img src={post.media} className="w-full h-full object-cover" />}
+                   </div>
+                   <div>
+                     <p className="font-bold text-sm">@{post.user}</p>
+                     <p className="text-xs opacity-50 truncate max-w-[200px]">{post.content}</p>
+                   </div>
+                </div>
+              )) : <div className="text-center opacity-30 mt-20">Aucun résultat pour "{searchQuery}"</div>}
+            </div>
+          </div>
+        )}
+
+        {/* --- REELS (PLAY) --- */}
+        {activeTab === 'play' && (
+          <div className="space-y-6">
+            <h2 className="text-xl font-bold italic mb-4">REELS</h2>
+            {myPosts.filter(p => p.type === 'reel').map(reel => (
+              <div key={reel.id} className="relative aspect-[9/16] bg-black rounded-[40px] overflow-hidden border border-white/10 shadow-2xl">
+                <video src={reel.media} autoPlay loop muted className="w-full h-full object-cover" />
+                <div className="absolute bottom-10 left-8 right-8">
+                  <p className="font-black text-lg mb-2">@{reel.user}</p>
+                  <p className="text-sm opacity-90">{reel.content}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* --- HOME FEED --- */}
         {activeTab === 'home' && (
-          <div className="space-y-8 animate-in fade-in duration-500">
+          <div className="space-y-10">
             {myPosts.length > 0 ? myPosts.map(post => (
-              <div key={post.id} className="bg-[#161b22] rounded-[35px] border border-white/5 overflow-hidden shadow-2xl">
-                <div className="p-5 flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gray-800 overflow-hidden shrink-0">
+              <div key={post.id} className="bg-[#161b22] rounded-[40px] border border-white/5 overflow-hidden shadow-2xl transition-all">
+                <div className="p-6 flex items-center gap-4">
+                  <div className="w-11 h-11 rounded-full bg-gray-800 overflow-hidden border-2" style={{ borderColor: themeColor }}>
                     {profilePic ? <img src={profilePic} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center font-bold" style={{ backgroundColor: themeColor }}>{username[0]}</div>}
                   </div>
-                  <span className="font-bold text-sm">@{post.user}</span>
+                  <span className="font-bold text-sm uppercase tracking-wider">@{post.user}</span>
                 </div>
-                {post.media && (post.type === 'reel' ? <video src={post.media} controls className="w-full" /> : <img src={post.media} className="w-full" />)}
-                <div className="p-6">
-                  <div className="text-sm mb-6 leading-relaxed">{renderText(post.content)}</div>
-                  <div className="flex gap-8 items-center">
-                    <button onClick={() => toggleLike(post.id)} className="flex flex-col items-center gap-1 active:scale-125 transition-transform">
+
+                {post.media && (
+                  post.type === 'reel' 
+                  ? <video src={post.media} controls className="w-full max-h-[500px] object-cover" />
+                  : <img src={post.media} className="w-full max-h-[500px] object-cover" />
+                )}
+
+                <div className="p-7">
+                  <div className="text-sm mb-8 leading-relaxed text-gray-200">{renderText(post.content)}</div>
+                  <div className="flex gap-10 items-center">
+                    <button onClick={() => toggleLike(post.id)} className="flex flex-col items-center gap-2 active:scale-150 transition-transform">
                       <Icons.Heart active={post.isLiked} />
-                      <span className="text-[10px] font-bold">{post.likes || 0}</span>
+                      <span className="text-[10px] font-black opacity-60">{post.likes || 0}</span>
                     </button>
-                    <button onClick={() => setShowCommentsFor(showCommentsFor === post.id ? null : post.id)} className="flex flex-col items-center gap-1">
+                    <button onClick={() => setShowCommentsFor(showCommentsFor === post.id ? null : post.id)} className="flex flex-col items-center gap-2">
                       <Icons.Message />
-                      <span className="text-[10px] font-bold">{post.comments?.length || 0}</span>
+                      <span className="text-[10px] font-black opacity-60">{post.comments?.length || 0}</span>
                     </button>
                   </div>
+
+                  {/* Commentaires */}
+                  {showCommentsFor === post.id && (
+                    <div className="mt-8 pt-6 border-t border-white/5 space-y-4">
+                      {post.comments?.map((c: any) => (
+                        <div key={c.id} className="text-xs bg-white/5 p-4 rounded-2xl">
+                          <span className="font-bold text-blue-400 mr-2">@{c.user}</span> {c.text}
+                        </div>
+                      ))}
+                      <div className="flex gap-3">
+                        <input 
+                          value={commentInput} 
+                          onChange={(e) => setCommentInput(e.target.value)} 
+                          placeholder="Votre commentaire..." 
+                          className="flex-1 bg-white/5 border border-white/10 rounded-full px-5 py-3 text-xs outline-none focus:border-blue-500" 
+                        />
+                        <button onClick={() => addComment(post.id)} className="p-3 rounded-full text-white" style={{ backgroundColor: themeColor }}>➤</button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
-            )) : <p className="text-center opacity-20 py-20">Rien à voir ici... Publie ton premier post !</p>}
+            )) : <div className="text-center py-32 opacity-20 font-bold italic uppercase tracking-[0.2em]">Flux vide</div>}
           </div>
         )}
 
         {/* --- PROFIL (TikTok Grid) --- */}
         {activeTab === 'profile' && (
-          <div className="animate-in slide-in-from-bottom-4 duration-500">
-            <div className="flex flex-col items-center mb-10">
-              <div className="w-24 h-24 rounded-full p-1 mb-4 shadow-2xl" style={{ backgroundColor: themeColor }}>
+          <div className="animate-in fade-in duration-500">
+            <div className="flex flex-col items-center mb-12">
+              <div className="w-28 h-28 rounded-full p-1 mb-6 shadow-2xl" style={{ backgroundColor: themeColor }}>
                 <div className="w-full h-full bg-[#161b22] rounded-full overflow-hidden flex items-center justify-center border-4 border-[#0b0e14]">
-                  {profilePic ? <img src={profilePic} className="w-full h-full object-cover" /> : <span className="text-3xl font-black">{username[0]}</span>}
+                  {profilePic ? <img src={profilePic} className="w-full h-full object-cover" /> : <span className="text-4xl font-black">{username[0]}</span>}
                 </div>
               </div>
-              <h2 className="text-xl font-bold">@{username}</h2>
+              <h2 className="text-2xl font-black italic tracking-tighter">@{username}</h2>
             </div>
-            <div className="flex justify-center gap-12 mb-10 text-center">
-               <div><p className="text-xl font-black">{totalViews}</p><p className="text-[9px] uppercase text-gray-500 font-bold">Vues</p></div>
-               <div><p className="text-xl font-black">{totalLikes}</p><p className="text-[9px] uppercase text-gray-500 font-bold">Likes</p></div>
+            
+            <div className="flex justify-center gap-16 mb-12 text-center">
+               <div><p className="text-2xl font-black">{totalViews}</p><p className="text-[10px] uppercase text-gray-500 font-black tracking-widest">Vues</p></div>
+               <div><p className="text-2xl font-black">{totalLikes}</p><p className="text-[10px] uppercase text-gray-500 font-black tracking-widest">Likes</p></div>
             </div>
-            <div className="grid grid-cols-3 gap-1">
+
+            <div className="grid grid-cols-3 gap-1 rounded-3xl overflow-hidden border border-white/5">
               {myPosts.map(p => (
-                <div key={p.id} className="aspect-[3/4] bg-[#161b22] relative overflow-hidden group">
-                  {p.media ? (p.type === 'reel' ? <video src={p.media} className="w-full h-full object-cover" /> : <img src={p.media} className="w-full h-full object-cover" />) : <div className="p-2 text-[8px] opacity-20">{p.content}</div>}
-                  <div className="absolute bottom-2 left-2 flex items-center gap-1 text-white text-[10px] font-bold drop-shadow-md"><Icons.Eye /> {p.views || 0}</div>
+                <div key={p.id} className="aspect-[3/4] bg-[#161b22] relative overflow-hidden group active:opacity-70">
+                  {p.media ? (
+                    p.type === 'reel' ? <video src={p.media} className="w-full h-full object-cover" /> : <img src={p.media} className="w-full h-full object-cover" />
+                  ) : <div className="p-3 text-[8px] opacity-20">{p.content}</div>}
+                  <div className="absolute bottom-3 left-3 flex items-center gap-1 text-white text-[11px] font-black drop-shadow-lg">
+                    <Icons.Eye /> {p.views || 0}
+                  </div>
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* --- AJOUTER (Add) --- */}
+        {/* --- AJOUTER --- */}
         {activeTab === 'add' && (
-          <div className="bg-[#161b22] rounded-[40px] p-8 mt-4 border border-white/5 animate-in zoom-in-95">
-            <textarea value={postText} onChange={(e) => setPostText(e.target.value)} placeholder="Quoi de neuf ? #dev #step" className="w-full bg-transparent min-h-[120px] outline-none text-lg mb-6" />
-            <div className="border-2 border-dashed border-white/10 rounded-2xl p-8 mb-6 text-center relative hover:bg-white/5 transition-colors">
+          <div className="bg-[#161b22] rounded-[45px] p-10 mt-6 border border-white/5 shadow-2xl">
+            <textarea 
+              value={postText} 
+              onChange={(e) => setPostText(e.target.value)} 
+              placeholder="Exprimez-vous... #dev #step" 
+              className="w-full bg-transparent min-h-[150px] outline-none text-xl mb-8 placeholder:opacity-20" 
+            />
+            <div className="border-2 border-dashed border-white/10 rounded-[30px] p-12 mb-10 text-center relative hover:bg-white/5 transition-all">
                <input type="file" accept="image/*,video/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e: any) => {
-                 const file = e.target.files?.[0]; if(file) {
-                   const reader = new FileReader(); reader.onloadend = () => { setMediaFile(reader.result as string); setIsReel(file.type.includes('video')) }; reader.readAsDataURL(file);
+                 const file = e.target.files?.[0]
+                 if(file) {
+                   const reader = new FileReader()
+                   reader.onloadend = () => { setMediaFile(reader.result as string); setIsReel(file.type.includes('video')) }
+                   reader.readAsDataURL(file)
                  }
                }} />
-               <p className="text-xs font-bold opacity-40">{mediaFile ? "Média prêt ✅" : "Photo ou Vidéo"}</p>
+               <p className="text-xs font-black uppercase tracking-widest opacity-30">{mediaFile ? "Média prêt à l'envoi ✅" : "Sélectionner Photo / Vidéo"}</p>
             </div>
-            <button onClick={handlePublish} className="w-full py-5 rounded-2xl font-black uppercase text-[10px] shadow-xl active:scale-95 transition-transform" style={{ backgroundColor: themeColor }}>Publier sur DEVSTEP</button>
+            <button 
+              onClick={handlePublish} 
+              className="w-full py-6 rounded-3xl font-black uppercase text-xs tracking-[0.3em] shadow-2xl active:scale-95 transition-all" 
+              style={{ backgroundColor: themeColor }}
+            >
+              Publier maintenant
+            </button>
+          </div>
+        )}
+
+        {/* --- PARAMETRES --- */}
+        {activeTab === 'settings' && (
+          <div className="bg-[#161b22] rounded-[40px] p-10 border border-white/5 space-y-10">
+            <h2 className="text-xl font-black uppercase tracking-widest">Réglages</h2>
+            <div>
+              <p className="text-[10px] font-black uppercase opacity-40 mb-4">Nom d'utilisateur</p>
+              <input value={username} onChange={(e) => setUsername(e.target.value)} className="w-full bg-white/5 border border-white/10 p-5 rounded-2xl outline-none" />
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase opacity-40 mb-4">Couleur du thème</p>
+              <input type="color" value={themeColor} onChange={(e) => setThemeColor(e.target.value)} className="w-full h-16 rounded-2xl bg-transparent cursor-pointer" />
+            </div>
+            <button onClick={() => setActiveTab('profile')} className="w-full py-5 bg-white text-black rounded-2xl font-black uppercase text-[10px]">Sauvegarder</button>
           </div>
         )}
 
       </main>
 
-      {/* --- BARRE DE NAVIGATION --- */}
-      <div className="fixed bottom-8 left-1/2 -translate-x-1/2 w-[92%] max-w-md bg-[#161b22]/95 backdrop-blur-2xl border border-white/10 rounded-full p-2 flex justify-around items-center z-[100] shadow-2xl">
-        <button onClick={() => setActiveTab('home')} className="p-4 transition-all" style={{ color: activeTab === 'home' ? themeColor : 'white', opacity: activeTab === 'home' ? 1 : 0.2 }}><Icons.Home /></button>
-        <button onClick={() => setActiveTab('search')} className="p-4 transition-all" style={{ color: activeTab === 'search' ? themeColor : 'white', opacity: activeTab === 'search' ? 1 : 0.2 }}><Icons.Search /></button>
-        <button onClick={() => setActiveTab('add')} className="w-14 h-14 rounded-full flex items-center justify-center text-3xl text-white shadow-lg active:rotate-90 transition-all" style={{ backgroundColor: themeColor }}>+</button>
-        <button onClick={() => setActiveTab('play')} className="p-4 transition-all" style={{ color: activeTab === 'play' ? themeColor : 'white', opacity: activeTab === 'play' ? 1 : 0.2 }}><Icons.Play /></button>
-        <button onClick={() => setActiveTab('profile')} className="p-4 transition-all" style={{ color: (activeTab === 'profile' || activeTab === 'settings') ? themeColor : 'white', opacity: (activeTab === 'profile' || activeTab === 'settings') ? 1 : 0.2 }}><Icons.User /></button>
+      {/* --- BARRE DE NAVIGATION (5 BOUTONS) --- */}
+      <div className="fixed bottom-8 left-1/2 -translate-x-1/2 w-[92%] max-w-md bg-[#161b22]/90 backdrop-blur-3xl border border-white/10 rounded-[40px] p-3 flex justify-around items-center z-[100] shadow-2xl">
+        <button onClick={() => setActiveTab('home')} className="p-4 transition-all" style={{ color: activeTab === 'home' ? themeColor : 'white', opacity: activeTab === 'home' ? 1 : 0.3 }}><Icons.Home /></button>
+        <button onClick={() => setActiveTab('search')} className="p-4 transition-all" style={{ color: activeTab === 'search' ? themeColor : 'white', opacity: activeTab === 'search' ? 1 : 0.3 }}><Icons.Search /></button>
+        
+        {/* BOUTON ADD CENTRAL */}
+        <button 
+          onClick={() => setActiveTab('add')} 
+          className="w-16 h-16 rounded-full flex items-center justify-center text-3xl text-white shadow-xl hover:rotate-90 transition-all active:scale-90" 
+          style={{ backgroundColor: themeColor }}
+        >
+          +
+        </button>
+
+        <button onClick={() => setActiveTab('play')} className="p-4 transition-all" style={{ color: activeTab === 'play' ? themeColor : 'white', opacity: activeTab === 'play' ? 1 : 0.3 }}><Icons.Play /></button>
+        <button onClick={() => setActiveTab('profile')} className="p-4 transition-all" style={{ color: (activeTab === 'profile' || activeTab === 'settings') ? themeColor : 'white', opacity: (activeTab === 'profile' || activeTab === 'settings') ? 1 : 0.3 }}><Icons.User /></button>
       </div>
     </div>
   )
