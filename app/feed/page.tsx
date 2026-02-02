@@ -1,7 +1,7 @@
 "use client"
 import { useState, useEffect, useRef } from 'react'
 
-// --- ICONS (Inspiré Minimalist UX) ---
+// --- ICONS ---
 const Icons = {
   Home: () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
   Search: () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>,
@@ -27,8 +27,11 @@ export default function FeedPage() {
   const [themeColor, setThemeColor] = useState("#3b82f6")
   const [profilePic, setProfilePic] = useState<string | null>(null)
   const [myPosts, setMyPosts] = useState<any[]>([])
+  const [searchQuery, setSearchQuery] = useState("")
+  const [showCommentsFor, setShowCommentsFor] = useState<number | null>(null)
+  const [commentInput, setCommentInput] = useState("")
   
-  // États Abonnés / Notifs
+  // États Abonnés / Notifs / Unfollow
   const [followers, setFollowers] = useState(0)
   const [notifications, setNotifications] = useState<any[]>([])
   const [showNotifs, setShowNotifs] = useState(false)
@@ -40,7 +43,6 @@ export default function FeedPage() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const [isRecording, setIsRecording] = useState(false)
 
-  // --- CHARGEMENT ---
   useEffect(() => {
     const saved = {
       posts: localStorage.getItem('ds_posts'),
@@ -60,7 +62,6 @@ export default function FeedPage() {
     if (saved.isfol) setIsFollowed(saved.isfol === 'true')
   }, [])
 
-  // --- SAUVEGARDE ---
   useEffect(() => {
     localStorage.setItem('ds_posts', JSON.stringify(myPosts))
     localStorage.setItem('ds_user', username)
@@ -72,14 +73,15 @@ export default function FeedPage() {
   }, [myPosts, username, themeColor, profilePic, followers, notifications, isFollowed])
 
   // --- LOGIQUE FOLLOW / UNFOLLOW ---
-  const handleFollowToggle = () => {
+  const handleFollowToggle = (e: any) => {
+    e.stopPropagation()
     if (isFollowed) {
       setFollowers(prev => Math.max(0, prev - 1))
       setIsFollowed(false)
     } else {
       setFollowers(prev => prev + 1)
       setIsFollowed(true)
-      setNotifications([{ id: Date.now(), text: "Un nouvel abonné ! 🚀" }, ...notifications])
+      setNotifications([{ id: Date.now(), text: "Un nouvel utilisateur s'est abonné ! 🚀", time: 'Maintenant' }, ...notifications])
     }
   }
 
@@ -93,7 +95,8 @@ export default function FeedPage() {
 
   const stopCamera = () => {
     if (videoRef.current?.srcObject) {
-      (videoRef.current.srcObject as MediaStream).getTracks().forEach(t => t.stop())
+      const stream = videoRef.current.srcObject as MediaStream
+      stream.getTracks().forEach(track => track.stop())
     }
     setIsCameraActive(false)
   }
@@ -108,8 +111,8 @@ export default function FeedPage() {
   }
 
   const startRecording = () => {
-    const stream = videoRef.current?.srcObject as MediaStream
-    const recorder = new MediaRecorder(stream)
+    if (!videoRef.current?.srcObject) return
+    const recorder = new MediaRecorder(videoRef.current.srcObject as MediaStream)
     mediaRecorderRef.current = recorder
     const chunks: Blob[] = []
     recorder.ondataavailable = (e) => chunks.push(e.data)
@@ -122,66 +125,165 @@ export default function FeedPage() {
 
   const stopRecording = () => { mediaRecorderRef.current?.stop(); setIsRecording(false); stopCamera(); }
 
-  // --- CALCULS (POUR FIXER L'ERREUR VS CODE) ---
+  // --- ACTIONS POSTS ---
+  const handlePublish = () => {
+    if (postText || mediaFile) {
+      const newPost = { id: Date.now(), user: username, content: postText, media: mediaFile, type: isReel ? 'reel' : 'photo', likes: 0, views: 0, isLiked: false, comments: [] }
+      setMyPosts([newPost, ...myPosts]); setActiveTab('home'); setPostText(""); setMediaFile(null); setIsReel(false)
+    }
+  }
+
+  const toggleLike = (id: number) => {
+    setMyPosts(prev => prev.map(p => p.id === id ? { ...p, isLiked: !p.isLiked, likes: p.isLiked ? (p.likes || 1) - 1 : (p.likes || 0) + 1 } : p))
+  }
+
+  const addComment = (postId: number) => {
+    if (!commentInput.trim()) return
+    setMyPosts(prev => prev.map(p => p.id === postId ? { ...p, comments: [...(p.comments || []), { id: Date.now(), text: commentInput, user: username }] } : p))
+    setCommentInput("")
+  }
+
   const totalViews = myPosts.reduce((acc, p) => acc + (p.views || 0), 0)
   const totalLikes = myPosts.reduce((acc, p) => acc + (p.likes || 0), 0)
 
   return (
     <div className="min-h-screen bg-[#0b0e14] text-white font-sans">
       <main className="max-w-xl mx-auto p-4 pb-40">
-        
+
         {/* --- HEADER --- */}
         <div className="pt-6 mb-10 flex justify-between items-center relative">
           <button onClick={() => setActiveTab('home')} className="text-3xl font-black italic uppercase" style={{ color: themeColor }}>DEVSTEP</button>
-          <div className="flex gap-4">
+          <div className="flex gap-4 items-center">
             <button onClick={() => setShowNotifs(!showNotifs)} className="relative p-2 bg-white/5 rounded-full">
               <Icons.Bell />
-              {notifications.length > 0 && <span className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full"></span>}
+              {notifications.length > 0 && <span className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full border-2 border-[#0b0e14]"></span>}
             </button>
             <button onClick={() => setActiveTab('settings')} className="p-2 bg-white/5 rounded-full"><Icons.Settings /></button>
           </div>
+
+          {showNotifs && (
+            <div className="absolute top-16 right-0 w-64 bg-[#161b22] border border-white/10 rounded-3xl p-5 z-[200] shadow-2xl animate-in zoom-in-95">
+              <h3 className="text-[10px] font-black uppercase opacity-40 mb-3">Notifications</h3>
+              <div className="space-y-3 max-h-64 overflow-y-auto">
+                {notifications.length > 0 ? notifications.map(n => (
+                  <div key={n.id} className="text-[11px] bg-white/5 p-3 rounded-xl border-l-2" style={{ borderLeftColor: themeColor }}>{n.text}</div>
+                )) : <p className="text-center py-2 text-[10px] opacity-30 italic">Aucune nouveauté</p>}
+              </div>
+            </div>
+          )}
         </div>
+
+        {/* --- RECHERCHE --- */}
+        {activeTab === 'search' && (
+          <div className="animate-in fade-in">
+            <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Rechercher #hashtag..." className="w-full bg-[#161b22] border border-white/10 rounded-2xl py-4 px-6 mb-8 outline-none focus:border-blue-500" />
+            <div className="space-y-4">
+              {myPosts.filter(p => p.content.toLowerCase().includes(searchQuery.toLowerCase())).map(post => (
+                <div key={post.id} className="bg-[#161b22]/40 p-5 rounded-[25px] flex gap-4 items-center">
+                   <div className="w-12 h-12 rounded-xl bg-gray-800 overflow-hidden shrink-0">{post.media && <img src={post.media} className="w-full h-full object-cover" />}</div>
+                   <div><p className="font-bold text-sm">@{post.user}</p><p className="text-xs opacity-50 truncate">{post.content}</p></div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* --- HOME FEED --- */}
         {activeTab === 'home' && (
-          <div className="space-y-8">
+          <div className="space-y-10 animate-in fade-in">
             {myPosts.map(post => (
-              <div key={post.id} className="bg-[#161b22] rounded-[30px] overflow-hidden border border-white/5 shadow-xl">
-                <div className="p-5 flex justify-between items-center">
-                  <span className="font-bold text-sm">@{post.user}</span>
-                  <button onClick={handleFollowToggle} className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase ${isFollowed ? 'bg-white/5 text-gray-400' : 'bg-white text-black'}`}>
+              <div key={post.id} className="bg-[#161b22] rounded-[40px] border border-white/5 overflow-hidden shadow-2xl">
+                <div className="p-6 flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-11 h-11 rounded-full bg-gray-800 overflow-hidden border-2" style={{ borderColor: themeColor }}>
+                      {profilePic ? <img src={profilePic} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-gray-700"></div>}
+                    </div>
+                    <span className="font-bold text-sm">@{post.user}</span>
+                  </div>
+                  <button onClick={handleFollowToggle} className={`px-5 py-2 rounded-full text-[10px] font-black uppercase transition-all ${isFollowed ? 'bg-white/5 text-gray-400 border border-white/10' : 'bg-white text-black'}`}>
                     {isFollowed ? "Abonné" : "S'abonner"}
                   </button>
                 </div>
                 {post.media && (post.type === 'reel' ? <video src={post.media} controls className="w-full" /> : <img src={post.media} className="w-full" />)}
+                <div className="p-7">
+                  <p className="text-sm mb-6">{post.content}</p>
+                  <div className="flex gap-8 items-center">
+                    <button onClick={() => toggleLike(post.id)} className="flex items-center gap-1">
+                      <Icons.Heart active={post.isLiked} /><span className="text-xs opacity-50">{post.likes || 0}</span>
+                    </button>
+                    <button onClick={() => setShowCommentsFor(showCommentsFor === post.id ? null : post.id)} className="flex items-center gap-1">
+                      <Icons.Message /><span className="text-xs opacity-50">{post.comments?.length || 0}</span>
+                    </button>
+                  </div>
+                  {showCommentsFor === post.id && (
+                    <div className="mt-6 pt-6 border-t border-white/5 space-y-4">
+                      {post.comments?.map((c: any) => (
+                        <div key={c.id} className="text-xs bg-white/5 p-3 rounded-xl"><span className="font-bold mr-2">@{c.user}</span> {c.text}</div>
+                      ))}
+                      <div className="flex gap-2">
+                        <input value={commentInput} onChange={(e) => setCommentInput(e.target.value)} placeholder="Votre commentaire..." className="flex-1 bg-white/5 border border-white/10 rounded-full px-4 py-2 text-xs outline-none" />
+                        <button onClick={() => addComment(post.id)} className="p-2 rounded-full" style={{ backgroundColor: themeColor }}>➤</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             ))}
           </div>
         )}
 
-        {/* --- CAMERA INTERFACE --- */}
+        {/* --- REELS --- */}
+        {activeTab === 'play' && (
+          <div className="space-y-8">
+            <h2 className="text-xl font-bold italic uppercase tracking-widest">RÉELS</h2>
+            {myPosts.filter(p => p.type === 'reel').map(reel => (
+              <div key={reel.id} className="relative aspect-[9/16] bg-black rounded-[50px] overflow-hidden shadow-2xl border border-white/5">
+                <video src={reel.media} autoPlay loop muted className="w-full h-full object-cover" />
+                <div className="absolute right-4 bottom-32 flex flex-col gap-6 items-center">
+                   <button onClick={() => toggleLike(reel.id)}><Icons.Heart active={reel.isLiked} /></button>
+                   <button onClick={handleFollowToggle} className={`w-10 h-10 rounded-full flex items-center justify-center ${isFollowed ? 'bg-green-500' : 'bg-white text-black'}`}>{isFollowed ? <Icons.Check /> : <Icons.Plus />}</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* --- AJOUTER / CAMÉRA --- */}
         {activeTab === 'add' && (
-          <div className="bg-[#161b22] rounded-[40px] p-8 border border-white/5">
+          <div className="bg-[#161b22] rounded-[45px] p-8 border border-white/5">
             {!isCameraActive ? (
               <div className="space-y-6">
-                <textarea value={postText} onChange={(e) => setPostText(e.target.value)} placeholder="Quoi de neuf ?" className="w-full bg-transparent outline-none text-xl min-h-[100px]" />
+                <textarea value={postText} onChange={(e) => setPostText(e.target.value)} placeholder="Quoi de neuf ? #devstep" className="w-full bg-transparent min-h-[100px] outline-none text-xl" />
+                {mediaFile && (
+                  <div className="relative rounded-2xl overflow-hidden border border-white/10">
+                    {isReel ? <video src={mediaFile} className="w-full h-40 object-cover" /> : <img src={mediaFile} className="w-full h-40 object-cover" />}
+                    <button onClick={() => setMediaFile(null)} className="absolute top-2 right-2 bg-red-500 p-1 rounded-full text-xs">X</button>
+                  </div>
+                )}
                 <div className="grid grid-cols-2 gap-4">
-                  <button onClick={startCamera} className="py-10 bg-white/5 rounded-3xl border border-dashed border-white/10 flex flex-col items-center gap-2"><Icons.Camera /> CAMÉRA</button>
-                  <button onClick={() => setActiveTab('home')} className="py-10 bg-white/5 rounded-3xl border border-dashed border-white/10 flex flex-col items-center gap-2">ANNULER</button>
+                  <button onClick={startCamera} className="py-8 rounded-3xl bg-white/5 border border-white/10 flex flex-col items-center gap-2 hover:bg-white/10">
+                    <Icons.Camera /> <span className="text-[10px] font-black uppercase tracking-widest">Caméra</span>
+                  </button>
+                  <label className="py-8 rounded-3xl bg-white/5 border border-white/10 flex flex-col items-center gap-2 cursor-pointer hover:bg-white/10">
+                    <Icons.Plus /> <span className="text-[10px] font-black uppercase tracking-widest">Fichier</span>
+                    <input type="file" className="hidden" onChange={(e: any) => {
+                      const file = e.target.files?.[0]; if(file) {
+                        const r = new FileReader(); r.onloadend = () => { setMediaFile(r.result as string); setIsReel(file.type.includes('video')) }; r.readAsDataURL(file);
+                      }
+                    }} />
+                  </label>
                 </div>
-                {mediaFile && <div className="text-center text-xs text-green-500 font-bold">MÉDIA PRÊT À PUBLIER ✅</div>}
-                <button onClick={() => {
-                  const newPost = { id: Date.now(), user: username, content: postText, media: mediaFile, type: isReel ? 'reel' : 'photo', likes: 0, views: 0 };
-                  setMyPosts([newPost, ...myPosts]); setActiveTab('home'); setMediaFile(null);
-                }} className="w-full py-5 rounded-2xl font-black" style={{ backgroundColor: themeColor }}>PUBLIER</button>
+                <button onClick={handlePublish} className="w-full py-5 rounded-3xl font-black uppercase tracking-widest" style={{ backgroundColor: themeColor }}>Publier</button>
               </div>
             ) : (
-              <div className="relative aspect-[3/4] bg-black rounded-3xl overflow-hidden">
+              <div className="relative rounded-3xl overflow-hidden bg-black aspect-[3/4]">
                 <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
                 <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-6 items-center">
-                  <button onClick={takePhoto} className="w-16 h-16 rounded-full border-4 border-white bg-white/20"></button>
-                  <button onClick={isRecording ? stopRecording : startRecording} className={`w-12 h-12 rounded-full border-2 border-white ${isRecording ? 'bg-red-600 animate-pulse' : 'bg-red-600/20'}`}></button>
-                  <button onClick={stopCamera} className="p-3 bg-white/10 rounded-full text-xs">QUITTER</button>
+                   <button onClick={stopCamera} className="p-3 bg-white/10 rounded-full"><Icons.Rotate /></button>
+                   <button onClick={takePhoto} className="w-16 h-16 rounded-full border-4 border-white flex items-center justify-center bg-white/10"><div className="w-12 h-12 bg-white rounded-full"></div></button>
+                   <button onClick={isRecording ? stopRecording : startRecording} className={`w-12 h-12 rounded-full border-2 border-white flex items-center justify-center ${isRecording ? 'animate-pulse' : ''}`}>
+                      <div className={`w-8 h-8 rounded-full bg-red-600 ${isRecording ? 'scale-75' : ''}`}></div>
+                   </button>
                 </div>
               </div>
             )}
@@ -191,18 +293,55 @@ export default function FeedPage() {
         {/* --- PROFIL --- */}
         {activeTab === 'profile' && (
           <div className="animate-in fade-in">
-            <div className="flex flex-col items-center mb-8">
-              <div className="w-24 h-24 rounded-full bg-gray-800 overflow-hidden mb-4 border-2" style={{ borderColor: themeColor }}>
-                {profilePic && <img src={profilePic} className="w-full h-full object-cover" />}
+            <div className="flex flex-col items-center mb-10">
+              <div className="w-28 h-28 rounded-full border-4 border-white/5 p-1 mb-4 shadow-2xl">
+                <div className="w-full h-full rounded-full bg-gray-800 overflow-hidden flex items-center justify-center">
+                  {profilePic ? <img src={profilePic} className="w-full h-full object-cover" /> : <span className="text-3xl font-black">{username[0]}</span>}
+                </div>
               </div>
-              <h2 className="text-xl font-black italic">@{username}</h2>
+              <h2 className="text-2xl font-black italic uppercase tracking-tighter">@{username}</h2>
             </div>
-            <div className="flex justify-around mb-10 text-center">
-              <div><p className="text-2xl font-black">{totalViews}</p><p className="text-[10px] opacity-40">VUES</p></div>
-              <div className="cursor-pointer" onClick={handleFollowToggle}>
-                <p className="text-2xl font-black" style={{ color: themeColor }}>{followers}</p>
-                <p className="text-[10px] opacity-40 uppercase tracking-widest">{isFollowed ? 'Abonné' : 'Abonnés'}</p>
+            <div className="flex justify-center gap-12 mb-10 text-center">
+               <div><p className="text-2xl font-black">{totalViews}</p><p className="text-[10px] uppercase opacity-40 font-black">Vues</p></div>
+               <div><p className="text-2xl font-black">{totalLikes}</p><p className="text-[10px] uppercase opacity-40 font-black">Likes</p></div>
+               <div onClick={handleFollowToggle} className="cursor-pointer">
+                 <p className="text-2xl font-black" style={{ color: themeColor }}>{followers}</p>
+                 <p className="text-[10px] uppercase opacity-40 font-black tracking-widest">Abonnés</p>
+               </div>
+            </div>
+            <div className="grid grid-cols-3 gap-1 rounded-3xl overflow-hidden bg-white/5 p-1">
+              {myPosts.map(p => (
+                <div key={p.id} className="aspect-[3/4] bg-[#0b0e14] relative overflow-hidden">
+                  {p.media ? (p.type === 'reel' ? <video src={p.media} className="w-full h-full object-cover" /> : <img src={p.media} className="w-full h-full object-cover" />) : <div className="p-3 text-[8px] opacity-20">{p.content}</div>}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* --- SETTINGS --- */}
+        {activeTab === 'settings' && (
+          <div className="bg-[#161b22] rounded-[40px] p-8 border border-white/5 space-y-8 animate-in zoom-in-95">
+            <h2 className="text-xl font-black uppercase tracking-widest">Réglages</h2>
+            <div className="space-y-6">
+              <div className="flex flex-col items-center gap-3">
+                <div className="w-20 h-20 rounded-full border-2 border-dashed border-white/20 overflow-hidden flex items-center justify-center relative">
+                  {profilePic ? <img src={profilePic} className="w-full h-full object-cover" /> : <Icons.Camera />}
+                  <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e:any) => {
+                    const r = new FileReader(); r.onloadend = () => setProfilePic(r.result as string); r.readAsDataURL(e.target.files[0])
+                  }} />
+                </div>
+                <p className="text-[10px] font-black uppercase opacity-40">Changer ma photo</p>
               </div>
+              <div>
+                <p className="text-[10px] font-black uppercase opacity-40 mb-2">Pseudo</p>
+                <input value={username} onChange={(e) => setUsername(e.target.value)} className="w-full bg-white/5 border border-white/10 p-4 rounded-xl outline-none" />
+              </div>
+              <div>
+                <p className="text-[10px] font-black uppercase opacity-40 mb-2">Thème</p>
+                <input type="color" value={themeColor} onChange={(e) => setThemeColor(e.target.value)} className="w-full h-12 bg-transparent cursor-pointer" />
+              </div>
+              <button onClick={() => setActiveTab('profile')} className="w-full py-4 bg-white text-black rounded-xl font-black uppercase text-xs">Sauvegarder</button>
             </div>
           </div>
         )}
@@ -210,10 +349,12 @@ export default function FeedPage() {
       </main>
 
       {/* --- NAV BAR --- */}
-      <div className="fixed bottom-8 left-1/2 -translate-x-1/2 w-[90%] max-w-md bg-[#161b22]/90 backdrop-blur-3xl border border-white/10 rounded-[40px] p-3 flex justify-around items-center z-[100]">
-        <button onClick={() => setActiveTab('home')} className="p-4" style={{ color: activeTab === 'home' ? themeColor : 'white', opacity: activeTab === 'home' ? 1 : 0.4 }}><Icons.Home /></button>
-        <button onClick={() => { setActiveTab('add'); startCamera(); }} className="w-14 h-14 rounded-full flex items-center justify-center text-white" style={{ backgroundColor: themeColor }}><Icons.Plus /></button>
-        <button onClick={() => setActiveTab('profile')} className="p-4" style={{ color: activeTab === 'profile' ? themeColor : 'white', opacity: activeTab === 'profile' ? 1 : 0.4 }}><Icons.User /></button>
+      <div className="fixed bottom-8 left-1/2 -translate-x-1/2 w-[92%] max-w-md bg-[#161b22]/90 backdrop-blur-3xl border border-white/10 rounded-[40px] p-3 flex justify-around items-center z-[100] shadow-2xl">
+        <button onClick={() => setActiveTab('home')} className="p-4" style={{ color: activeTab === 'home' ? themeColor : 'white', opacity: activeTab === 'home' ? 1 : 0.3 }}><Icons.Home /></button>
+        <button onClick={() => setActiveTab('search')} className="p-4" style={{ color: activeTab === 'search' ? themeColor : 'white', opacity: activeTab === 'search' ? 1 : 0.3 }}><Icons.Search /></button>
+        <button onClick={() => { setActiveTab('add'); if(!isCameraActive) startCamera(); }} className="w-16 h-16 rounded-full flex items-center justify-center text-3xl text-white shadow-xl active:scale-90" style={{ backgroundColor: themeColor }}>+</button>
+        <button onClick={() => setActiveTab('play')} className="p-4" style={{ color: activeTab === 'play' ? themeColor : 'white', opacity: activeTab === 'play' ? 1 : 0.3 }}><Icons.Play /></button>
+        <button onClick={() => setActiveTab('profile')} className="p-4" style={{ color: (activeTab === 'profile' || activeTab === 'settings') ? themeColor : 'white', opacity: (activeTab === 'profile' || activeTab === 'settings') ? 1 : 0.3 }}><Icons.User /></button>
       </div>
     </div>
   )
