@@ -1,12 +1,13 @@
 "use client"
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 
-// --- TYPESCRIPT INTERFACES (Pour supprimer tes erreurs rouges) ---
+// --- TYPES ---
 interface UserProfile {
   country: string;
   color: string;
   bio: string;
+  displayName?: string;
 }
 
 interface Post {
@@ -15,141 +16,176 @@ interface Post {
   content: string;
   likes: number;
   lang: string;
+  media?: string; // Pour stocker l'URL de l'image/vidéo
 }
 
-// --- ICONES ---
 const Icons = {
   Home: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>,
   Search: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>,
   Play: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>,
   User: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
-  Bell: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>,
-  UserPlus: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg>,
-  Back: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="m15 18-6-6 6-6"/></svg>,
-  X: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
-}
-
-// --- DATABASE SIMULÉE (Avec Index Signature pour corriger l'erreur de ton image) ---
-const GLOBAL_USERS: Record<string, UserProfile> = {
-  "Shoncs": { country: "FR", color: "from-blue-600 to-indigo-600", bio: "Admin" },
-  "Alex_NY": { country: "USA", color: "from-red-500 to-orange-500", bio: "Developer" },
-  "Yuki_Tokyo": { country: "JP", color: "from-pink-500 to-purple-500", bio: "Designer" }
+  Camera: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>,
+  X: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>,
+  Globe: () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
 }
 
 export default function FeedPage() {
+  // --- ÉTATS DYNAMIQUES ---
   const [activeTab, setActiveTab] = useState('home')
-  const [searchQuery, setSearchQuery] = useState("")
-  const [postText, setPostText] = useState("")
-  
+  const [currentUser, setCurrentUser] = useState<string>("") // Pseudo vide au départ
+  const [showNamingPage, setShowNamingPage] = useState(true)
+  const [tempMedia, setTempMedia] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
   const [posts, setPosts] = useState<Post[]>([
-    { id: 1, userId: "Shoncs", content: "Bienvenue sur la version fonctionnelle de DEVSTEP ! ✨", likes: 12, lang: "FR" },
-    { id: 2, userId: "Alex_NY", content: "The UI looks amazing with this glassmorphism bar.", likes: 8, lang: "EN" }
+    { id: 1, userId: "Admin", content: "Bienvenue sur DEVSTEP !", likes: 99, lang: "FR" }
   ])
 
-  const filteredPosts = posts.filter(p => 
-    p.content.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    p.userId.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  // --- PERSISTANCE DU PSEUDO ---
+  useEffect(() => {
+    const savedName = localStorage.getItem('devstep_user')
+    if (savedName) {
+      setCurrentUser(savedName)
+      setShowNamingPage(false)
+    }
+  }, [])
+
+  const saveUsername = (name: string) => {
+    if (name.length > 2) {
+      localStorage.setItem('devstep_user', name)
+      setCurrentUser(name)
+      setShowNamingPage(false)
+    }
+  }
+
+  // --- GESTION MÉDIA ---
+  const handleMediaUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const url = URL.createObjectURL(file)
+      setTempMedia(url)
+    }
+  }
+
+  // --- PAGE D'ONBOARDING (CHOIX DU PSEUDO) ---
+  if (showNamingPage) {
+    return (
+      <div className="h-screen bg-[#06090f] flex items-center justify-center p-6 text-center">
+        <div className="max-w-sm w-full space-y-8 animate-in fade-in zoom-in duration-500">
+          <h1 className="text-4xl font-black italic text-blue-500 italic tracking-tighter">DEVSTEP</h1>
+          <div className="space-y-4">
+            <p className="text-white/60 text-sm font-bold uppercase tracking-widest">Choisis ton identité</p>
+            <input 
+              autoFocus
+              onKeyDown={(e) => e.key === 'Enter' && saveUsername((e.target as HTMLInputElement).value)}
+              placeholder="@pseudo..." 
+              className="w-full bg-[#10141d] border border-blue-500/30 rounded-2xl py-5 px-6 outline-none focus:border-blue-500 transition-all text-center text-xl font-bold"
+            />
+            <button 
+              onClick={() => {
+                const input = document.querySelector('input')?.value
+                if(input) saveUsername(input)
+              }}
+              className="w-full bg-blue-600 py-4 rounded-2xl font-black uppercase text-xs tracking-widest shadow-lg shadow-blue-600/20"
+            >
+              Entrer dans le Sanctuaire
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="min-h-screen bg-[#06090f] text-white font-sans overflow-x-hidden selection:bg-blue-500/30">
+    <div className="min-h-screen bg-[#06090f] text-white font-sans overflow-x-hidden pb-40">
       
-      {/* --- HEADER (Identique à ton screen) --- */}
-      <nav className="max-w-4xl mx-auto p-6 flex justify-between items-center">
-        <h1 className="text-3xl font-black italic text-blue-500 tracking-tighter">DEVSTEP</h1>
-        <div className="flex gap-3">
-          <button className="p-2.5 bg-white/5 hover:bg-white/10 rounded-full transition-colors border border-white/5"><Icons.UserPlus /></button>
-          <button className="p-2.5 bg-white/10 rounded-full border border-white/10"><Icons.Bell /></button>
+      {/* HEADER AVEC PSEUDO ACTUEL */}
+      <nav className="max-w-4xl mx-auto p-6 flex justify-between items-center sticky top-0 bg-[#06090f]/80 backdrop-blur-xl z-[100]">
+        <h1 className="text-2xl font-black italic text-blue-500">DEVSTEP</h1>
+        <div className="flex items-center gap-3">
+          <span className="text-[10px] font-black bg-blue-600/20 text-blue-400 px-3 py-1 rounded-full border border-blue-500/20">
+            @{currentUser}
+          </span>
+          <button onClick={() => { localStorage.removeItem('devstep_user'); setShowNamingPage(true); }} className="p-2 opacity-20 hover:opacity-100 transition-opacity">
+            <Icons.X />
+          </button>
         </div>
       </nav>
 
-      <main className="max-w-2xl mx-auto px-4 pb-40">
-        
-        {/* --- BARRE DE RECHERCHE (Identique à ton screen) --- */}
-        <div className="flex items-center gap-4 mt-4 mb-10">
-          <button onClick={() => setSearchQuery("")} className="p-3 bg-white/5 hover:bg-white/10 rounded-full transition-all border border-white/5">
-            <Icons.Back />
-          </button>
-          <div className="relative flex-1 group">
-            <div className="absolute left-5 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-blue-500 transition-colors">
-              <Icons.Search />
-            </div>
-            <input 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Chercher un ami (@) ou un post..." 
-              className="w-full bg-[#10141d] border border-white/5 rounded-full py-4 pl-14 pr-6 outline-none focus:border-blue-500/50 focus:bg-[#121825] transition-all text-sm placeholder:text-white/20"
-            />
-          </div>
-        </div>
+      <main className="max-w-2xl mx-auto px-4">
 
-        {/* --- ZONE D'ÉCRITURE (Conditionnelle) --- */}
+        {/* ZONE DE PUBLICATION (PHOTO/VIDEO) */}
         {activeTab === 'add' && (
-          <div className="mb-10 animate-in zoom-in-95 duration-300">
-            <div className="bg-[#10141d] border border-white/10 rounded-[30px] p-6 shadow-2xl">
+          <div className="mb-10 animate-in slide-in-from-bottom-5 duration-300">
+            <div className="bg-[#10141d] border border-white/10 rounded-[30px] p-6">
               <textarea 
                 autoFocus
-                value={postText}
-                onChange={(e) => setPostText(e.target.value)}
-                placeholder="Exprime-toi..." 
-                className="w-full bg-transparent min-h-[120px] outline-none resize-none text-lg"
+                onChange={(e) => (window as any).postContent = e.target.value}
+                placeholder={`Quoi de neuf, ${currentUser} ?`} 
+                className="w-full bg-transparent min-h-[100px] outline-none resize-none text-lg"
               />
-              <div className="flex justify-end gap-3 mt-4">
-                <button onClick={() => setActiveTab('home')} className="px-6 py-2 rounded-full text-xs font-bold uppercase text-white/40">Annuler</button>
+              
+              {/* APERÇU DU MÉDIA */}
+              {tempMedia && (
+                <div className="relative mt-4 rounded-2xl overflow-hidden border border-white/10 max-h-60">
+                   <img src={tempMedia} className="w-full h-full object-cover" alt="preview" />
+                   <button onClick={() => setTempMedia(null)} className="absolute top-2 right-2 bg-black/50 p-2 rounded-full"><Icons.X /></button>
+                </div>
+              )}
+
+              <div className="flex justify-between items-center mt-6">
+                <button 
+                  onClick={() => fileInputRef.current?.click()} 
+                  className="flex items-center gap-2 text-blue-500 font-bold text-xs uppercase"
+                >
+                  <Icons.Camera /> Photo / Vidéo
+                </button>
+                <input ref={fileInputRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleMediaUpload} />
+                
                 <button 
                   onClick={() => {
-                    if(postText) {
-                      setPosts([{id: Date.now(), userId: "Shoncs", content: postText, likes: 0, lang: "FR"}, ...posts]);
-                      setPostText("");
-                      setActiveTab('home');
+                    const content = (window as any).postContent
+                    if(content || tempMedia) {
+                      setPosts([{id: Date.now(), userId: currentUser, content: content || "", likes: 0, lang: "FR", media: tempMedia || undefined}, ...posts])
+                      setTempMedia(null)
+                      setActiveTab('home')
                     }
                   }}
-                  className="px-8 py-2 bg-blue-600 rounded-full text-xs font-black uppercase tracking-widest hover:bg-blue-500 transition-colors"
+                  className="px-8 py-3 bg-blue-600 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg"
                 >
-                  Publier
+                  Diffuser
                 </button>
               </div>
             </div>
           </div>
         )}
 
-        {/* --- LISTE DES POSTS --- */}
+        {/* FEED AVEC MÉDIA ÉTENDU */}
         <div className="space-y-6">
-          {filteredPosts.length > 0 ? filteredPosts.map(post => (
-            <div key={post.id} className="bg-[#10141d] border border-white/5 rounded-[30px] p-6 hover:border-white/10 transition-all group">
+          {posts.map(post => (
+            <div key={post.id} className="bg-[#10141d] border border-white/5 rounded-[30px] p-6">
               <div className="flex items-center gap-3 mb-4">
-                <div className={`w-10 h-10 rounded-full bg-gradient-to-tr ${GLOBAL_USERS[post.userId]?.color || 'from-gray-700 to-gray-800'}`} />
-                <div className="flex flex-col">
-                  <span className="text-xs font-black uppercase italic text-blue-400">@{post.userId}</span>
-                  <span className="text-[9px] font-bold text-white/20 uppercase tracking-widest">{GLOBAL_USERS[post.userId]?.country || 'Unknown'}</span>
-                </div>
+                <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-800" />
+                <span className="text-xs font-black uppercase italic text-blue-400">@{post.userId}</span>
               </div>
-              <p className="text-gray-300 leading-relaxed text-sm">{post.content}</p>
+              <p className="text-gray-300 mb-4">{post.content}</p>
+              {post.media && (
+                <div className="rounded-2xl overflow-hidden border border-white/5 mb-4 shadow-2xl">
+                   <img src={post.media} className="w-full object-cover" alt="post media" />
+                </div>
+              )}
             </div>
-          )) : (
-            <div className="text-center py-20 opacity-10 font-black italic uppercase tracking-[0.3em]">Aucun résultat</div>
-          )}
+          ))}
         </div>
       </main>
 
-      {/* --- BOTTOM BAR (Exactement comme ton screen) --- */}
-      <div className="fixed bottom-10 left-1/2 -translate-x-1/2 w-[90%] max-w-sm bg-[#10141d]/80 backdrop-blur-2xl border border-white/10 rounded-[40px] p-3 flex justify-around items-center shadow-2xl z-[100]">
-        <button onClick={() => setActiveTab('home')} className={`p-4 transition-all ${activeTab === 'home' ? 'text-blue-500' : 'text-white/20 hover:text-white'}`}><Icons.Home /></button>
-        <button onClick={() => setActiveTab('search')} className={`p-4 transition-all ${activeTab === 'search' ? 'text-blue-500' : 'text-white/20 hover:text-white'}`}><Icons.Search /></button>
-        
-        {/* BOUTON CENTRAL + */}
-        <button 
-          onClick={() => activeTab === 'add' ? setActiveTab('home') : setActiveTab('add')}
-          className={`w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300 shadow-xl shadow-blue-600/20 ${activeTab === 'add' ? 'bg-red-500 rotate-0' : 'bg-blue-600 hover:scale-110 active:scale-95'}`}
-        >
-          {activeTab === 'add' ? <Icons.X /> : <span className="text-3xl font-light mb-1">+</span>}
-        </button>
-
-        <button onClick={() => setActiveTab('play')} className={`p-4 transition-all ${activeTab === 'play' ? 'text-blue-500' : 'text-white/20 hover:text-white'}`}><Icons.Play /></button>
-        
-        <Link href="/profile" className="p-4 transition-all text-white/20 hover:text-white">
-          <Icons.User />
-        </Link>
+      {/* NAVIGATION BAR */}
+      <div className="fixed bottom-10 left-1/2 -translate-x-1/2 w-[90%] max-w-sm bg-[#10141d]/80 backdrop-blur-2xl border border-white/10 rounded-[40px] p-3 flex justify-around items-center z-[100]">
+        <button onClick={() => setActiveTab('home')} className={`p-4 transition-all ${activeTab === 'home' ? 'text-blue-500' : 'text-white/20'}`}><Icons.Home /></button>
+        <button onClick={() => setActiveTab('search')} className={`p-4 transition-all ${activeTab === 'search' ? 'text-blue-500' : 'text-white/20'}`}><Icons.Search /></button>
+        <button onClick={() => setActiveTab('add')} className="w-14 h-14 bg-blue-600 rounded-full flex items-center justify-center shadow-xl shadow-blue-600/20 hover:scale-105 active:scale-95 transition-all"><span className="text-3xl font-light mb-1">+</span></button>
+        <button onClick={() => setActiveTab('play')} className={`p-4 transition-all ${activeTab === 'play' ? 'text-blue-500' : 'text-white/20'}`}><Icons.Play /></button>
+        <Link href="/profile" className="p-4 text-white/20"><Icons.User /></Link>
       </div>
 
     </div>
